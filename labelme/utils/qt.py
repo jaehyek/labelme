@@ -74,7 +74,7 @@ def labelValidator():
 
 class struct(object):
     def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+        self.__dict__.update(kwargs)        # 단순히  class을 사용해,  dict type으로  저장하는 기능을 제공.
 
 
 def distance(p):

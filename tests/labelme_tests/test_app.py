@@ -75,7 +75,7 @@ def test_MainWindow_annotate_jpg(qtbot):
 
     config = labelme.config.get_default_config()
     win = labelme.app.MainWindow(
-        config=config, filename=input_file, output_file=out_file,
+        dict_config=config, filename=input_file, output_file=out_file,
     )
     qtbot.addWidget(win)
     _win_show_and_wait_imageData(qtbot, win)

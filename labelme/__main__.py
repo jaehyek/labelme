@@ -36,6 +36,7 @@ def main():
         "--output",
         "-O",
         "-o",
+        default=r'D:\proj_gauge\image_test\digit_class_out_json',
         help="output file or directory (if it ends with .json it is "
         "recognized as file, else as directory)",
     )
@@ -46,7 +47,7 @@ def main():
         help="config file or yaml-format string (default: {})".format(
             default_config_file
         ),
-        default=default_config_file,
+        default=r'./config/default_config.yaml',
     )
     # config for the gui
     parser.add_argument(
@@ -136,15 +137,17 @@ def main():
         else:
             args.label_flags = yaml.safe_load(args.label_flags)
 
+
     config_from_args = args.__dict__
+
     config_from_args.pop("version")
     reset_config = config_from_args.pop("reset_config")
     filename = config_from_args.pop("filename")
     output = config_from_args.pop("output")
     config_file_or_yaml = config_from_args.pop("config")
-    config = get_config(config_file_or_yaml, config_from_args)
+    dict_config = get_config(config_file_or_yaml, config_from_args)
 
-    if not config["labels"] and config["validate_label"]:
+    if not dict_config["labels"] and dict_config["validate_label"]:
         logger.error(
             "--labels must be specified with --validatelabel or "
             "validate_label: true in the config file "
@@ -160,17 +163,17 @@ def main():
         else:
             output_dir = output
 
-    translator = QtCore.QTranslator()
+    translator = QtCore.QTranslator()       #다국어 변경.
     translator.load(
         QtCore.QLocale.system().name(),
         osp.dirname(osp.abspath(__file__)) + "/translate",
     )
     app = QtWidgets.QApplication(sys.argv)
-    app.setApplicationName(__appname__)
+    app.setApplicationName(__appname__)     # __appname__ 은 __init__.py 에 존재한다.
     app.setWindowIcon(newIcon("icon"))
     app.installTranslator(translator)
-    win = MainWindow(
-        config=config,
+    win = MainWindow(                       # MainWindow은 app.py에 존재한다.
+        dict_config=dict_config,
         filename=filename,
         output_file=output_file,
         output_dir=output_dir,

@@ -65,7 +65,7 @@ class Canvas(QtWidgets.QWidget):
         self.prevMovePoint = QtCore.QPoint()
         self.offsets = QtCore.QPoint(), QtCore.QPoint()
         self.scale = 1.0
-        self.pixmap = QtGui.QPixmap()
+        self.pixmap = QtGui.QPixmap()       # 이미지를 hold할 수 있는 객체.
         self.visible = {}
         self._hideBackround = False
         self.hideBackround = False
@@ -205,11 +205,7 @@ class Canvas(QtWidgets.QWidget):
                 # Don't allow the user to draw outside the pixmap.
                 # Project the point to the pixmap's edges.
                 pos = self.intersectionPoint(self.current[-1], pos)
-            elif (
-                len(self.current) > 1
-                and self.createMode == "polygon"
-                and self.closeEnough(pos, self.current[0])
-            ):
+            elif ( len(self.current) > 1 and self.createMode == "polygon" and self.closeEnough(pos, self.current[0]) ):
                 # Attract line to starting point and
                 # colorise to alert the user.
                 pos = self.current[0]
@@ -241,9 +237,7 @@ class Canvas(QtWidgets.QWidget):
                 self.boundedMoveShapes(self.selectedShapesCopy, pos)
                 self.repaint()
             elif self.selectedShapes:
-                self.selectedShapesCopy = [
-                    s.copy() for s in self.selectedShapes
-                ]
+                self.selectedShapesCopy = [ s.copy() for s in self.selectedShapes ]
                 self.repaint()
             return
 
@@ -289,9 +283,7 @@ class Canvas(QtWidgets.QWidget):
                 self.hVertex = None
                 self.prevhShape = self.hShape = shape
                 self.prevhEdge = self.hEdge = index_edge
-                self.setToolTip(
-                    self.tr("Click & drag to move shape '%s'") % shape.label
-                )
+                self.setToolTip( self.tr("Click & drag to move shape '%s'") % shape.label )
                 self.setStatusTip(self.toolTip())
                 self.overrideCursor(CURSOR_GRAB)
                 self.update()
@@ -378,35 +370,23 @@ class Canvas(QtWidgets.QWidget):
         if ev.button() == QtCore.Qt.RightButton:
             menu = self.menus[len(self.selectedShapesCopy) > 0]
             self.restoreCursor()
-            if (
-                not menu.exec_(self.mapToGlobal(ev.pos()))
-                and self.selectedShapesCopy
-            ):
+            if ( not menu.exec_(self.mapToGlobal(ev.pos())) and self.selectedShapesCopy ):
                 # Cancel the move by deleting the shadow copy.
                 self.selectedShapesCopy = []
                 self.repaint()
         elif ev.button() == QtCore.Qt.LeftButton and self.selectedShapes:
             self.overrideCursor(CURSOR_GRAB)
-            if (
-                self.editing()
-                and int(ev.modifiers()) == QtCore.Qt.ShiftModifier
-            ):
+            if ( self.editing() and int(ev.modifiers()) == QtCore.Qt.ShiftModifier ):
                 # Add point to line if: left-click + SHIFT on a line segment
                 self.addPointToEdge()
         elif ev.button() == QtCore.Qt.LeftButton and self.selectedVertex():
-            if (
-                self.editing()
-                and int(ev.modifiers()) == QtCore.Qt.ShiftModifier
-            ):
+            if ( self.editing() and int(ev.modifiers()) == QtCore.Qt.ShiftModifier ):
                 # Delete point if: left-click + SHIFT on a point
                 self.removeSelectedPoint()
 
         if self.movingShape and self.hShape:
             index = self.shapes.index(self.hShape)
-            if (
-                self.shapesBackups[-1][index].points
-                != self.shapes[index].points
-            ):
+            if ( self.shapesBackups[-1][index].points != self.shapes[index].points ):
                 self.storeShapes()
                 self.shapeMoved.emit()
 
@@ -445,11 +425,7 @@ class Canvas(QtWidgets.QWidget):
     def mouseDoubleClickEvent(self, ev):
         # We need at least 4 points here, since the mousePress handler
         # adds an extra one before this handler is called.
-        if (
-            self.double_click == "close"
-            and self.canCloseShape()
-            and len(self.current) > 3
-        ):
+        if (self.double_click == "close" and self.canCloseShape() and len(self.current) > 3 ):
             self.current.popPoint()
             self.finalise()
 
@@ -470,9 +446,7 @@ class Canvas(QtWidgets.QWidget):
                     self.setHiding()
                     if multiple_selection_mode:
                         if shape not in self.selectedShapes:
-                            self.selectionChanged.emit(
-                                self.selectedShapes + [shape]
-                            )
+                            self.selectionChanged.emit(self.selectedShapes + [shape])
                     else:
                         self.selectionChanged.emit([shape])
                     return
@@ -576,9 +550,7 @@ class Canvas(QtWidgets.QWidget):
         p.drawPixmap(0, 0, self.pixmap)
         Shape.scale = self.scale
         for shape in self.shapes:
-            if (shape.selected or not self._hideBackround) and self.isVisible(
-                shape
-            ):
+            if (shape.selected or not self._hideBackround) and self.isVisible(shape):
                 shape.fill = shape.selected or shape == self.hShape
                 shape.paint(p)
         if self.current:

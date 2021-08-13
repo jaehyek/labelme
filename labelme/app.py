@@ -50,41 +50,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
     FIT_WINDOW, FIT_WIDTH, MANUAL_ZOOM = 0, 1, 2
 
-    def __init__(
-        self,
-        config=None,
-        filename=None,
-        output=None,
-        output_file=None,
-        output_dir=None,
-    ):
+    def __init__(self, dict_config=None, filename=None, output=None, output_file=None, output_dir=None, ):
         if output is not None:
-            logger.warning(
-                "argument output is deprecated, use output_file instead"
-            )
+            logger.warning( "argument output is deprecated, use output_file instead" )
             if output_file is None:
                 output_file = output
 
         # see labelme/config/default_config.yaml for valid configuration
-        if config is None:
-            config = get_config()
-        self._config = config
+        if dict_config is None:
+            dict_config = get_config()
+        self._dict_config = dict_config
 
         # set default shape colors
-        Shape.line_color = QtGui.QColor(*self._config["shape"]["line_color"])
-        Shape.fill_color = QtGui.QColor(*self._config["shape"]["fill_color"])
-        Shape.select_line_color = QtGui.QColor(
-            *self._config["shape"]["select_line_color"]
-        )
-        Shape.select_fill_color = QtGui.QColor(
-            *self._config["shape"]["select_fill_color"]
-        )
-        Shape.vertex_fill_color = QtGui.QColor(
-            *self._config["shape"]["vertex_fill_color"]
-        )
-        Shape.hvertex_fill_color = QtGui.QColor(
-            *self._config["shape"]["hvertex_fill_color"]
-        )
+        Shape.line_color = QtGui.QColor(*self._dict_config["shape"]["line_color"])       # r,g,b,alpha 값이다.
+        Shape.fill_color = QtGui.QColor(*self._dict_config["shape"]["fill_color"])
+        Shape.select_line_color = QtGui.QColor(*self._dict_config["shape"]["select_line_color"])
+        Shape.select_fill_color = QtGui.QColor(*self._dict_config["shape"]["select_fill_color"])
+        Shape.vertex_fill_color = QtGui.QColor(*self._dict_config["shape"]["vertex_fill_color"])
+        Shape.hvertex_fill_color = QtGui.QColor(*self._dict_config["shape"]["hvertex_fill_color"])
 
         super(MainWindow, self).__init__()
         self.setWindowTitle(__appname__)
@@ -97,80 +80,89 @@ class MainWindow(QtWidgets.QMainWindow):
         # Main widgets and related state.
         self.labelDialog = LabelDialog(
             parent=self,
-            labels=self._config["labels"],
-            sort_labels=self._config["sort_labels"],
-            show_text_field=self._config["show_label_text_field"],
-            completion=self._config["label_completion"],
-            fit_to_content=self._config["fit_to_content"],
-            flags=self._config["label_flags"],
+            labels=self._dict_config["labels"],
+            sort_labels=self._dict_config["sort_labels"],
+            show_text_field=self._dict_config["show_label_text_field"],
+            completion=self._dict_config["label_completion"],
+            fit_to_content=self._dict_config["fit_to_content"],
+            flags=self._dict_config["label_flags"],
         )
 
-        self.labelList = LabelListWidget()
         self.lastOpenDir = None
 
-        self.flag_dock = self.flag_widget = None
-        self.flag_dock = QtWidgets.QDockWidget(self.tr("Flags"), self)
-        self.flag_dock.setObjectName("Flags")
-        self.flag_widget = QtWidgets.QListWidget()
-        if config["flags"]:
-            self.loadFlags({k: False for k in config["flags"]})
-        self.flag_dock.setWidget(self.flag_widget)
-        self.flag_widget.itemChanged.connect(self.setDirty)
+        ## flag widget
+        self.dockwidget_flag = self.listwidget_flag = None
+        self.dockwidget_flag = QtWidgets.QDockWidget(self.tr("Flags"), self)      # QObject.tr은 다중언어를 지원하기 위해서.
+        self.dockwidget_flag.setObjectName("Flags")
 
-        self.labelList.itemSelectionChanged.connect(self.labelSelectionChanged)
-        self.labelList.itemDoubleClicked.connect(self.editLabel)
-        self.labelList.itemChanged.connect(self.labelItemChanged)
-        self.labelList.itemDropped.connect(self.labelOrderChanged)
-        self.shape_dock = QtWidgets.QDockWidget(
-            self.tr("Polygon Labels"), self
-        )
-        self.shape_dock.setObjectName("Labels")
-        self.shape_dock.setWidget(self.labelList)
+        self.listwidget_flag = QtWidgets.QListWidget()
+        if dict_config["flags"]:
+            self.loadFlags({k: False for k in dict_config["flags"]})
+        self.dockwidget_flag.setWidget(self.listwidget_flag)
+        self.listwidget_flag.itemChanged.connect(self.canvas_shape_moved)
 
-        self.uniqLabelList = UniqueLabelQListWidget()
-        self.uniqLabelList.setToolTip(
+        # label widget
+        self.listwidget_label = LabelListWidget()  # labelme.widgets.LabelListWidget
+        self.listwidget_label.itemSelectionChanged.connect(self.labelSelectionChanged)
+        self.listwidget_label.itemDoubleClicked.connect(self.editLabel)
+        self.listwidget_label.itemChanged.connect(self.labelItemChanged)
+        self.listwidget_label.itemDropped.connect(self.labelOrderChanged)
+
+        self.dockwidget_label = QtWidgets.QDockWidget(self.tr("Polygon Labels"), self)
+        self.dockwidget_label.setObjectName("Labels")
+        self.dockwidget_label.setWidget(self.listwidget_label)
+
+        ## uniq list widget
+        self.uniqlistwidget_label = UniqueLabelQListWidget()
+        self.uniqlistwidget_label.setToolTip(
             self.tr(
                 "Select label to start annotating for it. "
                 "Press 'Esc' to deselect."
             )
         )
-        if self._config["labels"]:
-            for label in self._config["labels"]:
-                item = self.uniqLabelList.createItemFromLabel(label)
-                self.uniqLabelList.addItem(item)
+        if self._dict_config["labels"]:
+            for label in self._dict_config["labels"]:
+                item = self.uniqlistwidget_label.createItemFromLabel(label)
+                self.uniqlistwidget_label.addItem(item)
                 rgb = self._get_rgb_by_label(label)
-                self.uniqLabelList.setItemLabel(item, label, rgb)
-        self.label_dock = QtWidgets.QDockWidget(self.tr(u"Label List"), self)
-        self.label_dock.setObjectName(u"Label List")
-        self.label_dock.setWidget(self.uniqLabelList)
+                self.uniqlistwidget_label.setItemLabel(item, label, rgb)
+        self.dockwidget_uniqlabel = QtWidgets.QDockWidget(self.tr(u"Label List"), self)
+        self.dockwidget_uniqlabel.setObjectName(u"Label List")
+        self.dockwidget_uniqlabel.setWidget(self.uniqlistwidget_label)
 
-        self.fileSearch = QtWidgets.QLineEdit()
-        self.fileSearch.setPlaceholderText(self.tr("Search Filename"))
-        self.fileSearch.textChanged.connect(self.fileSearchChanged)
-        self.fileListWidget = QtWidgets.QListWidget()
-        self.fileListWidget.itemSelectionChanged.connect(
-            self.fileSelectionChanged
-        )
-        fileListLayout = QtWidgets.QVBoxLayout()
-        fileListLayout.setContentsMargins(0, 0, 0, 0)
-        fileListLayout.setSpacing(0)
-        fileListLayout.addWidget(self.fileSearch)
-        fileListLayout.addWidget(self.fileListWidget)
-        self.file_dock = QtWidgets.QDockWidget(self.tr(u"File List"), self)
-        self.file_dock.setObjectName(u"Files")
-        fileListWidget = QtWidgets.QWidget()
-        fileListWidget.setLayout(fileListLayout)
-        self.file_dock.setWidget(fileListWidget)
+
+        ## uniq list widget
+        self.lineeditwidget_filesearch = QtWidgets.QLineEdit()
+        self.lineeditwidget_filesearch.setPlaceholderText(self.tr("Search Filename"))
+        self.lineeditwidget_filesearch.textChanged.connect(self.fileSearchChanged)
+
+        #
+        self.listwidget_filelist = QtWidgets.QListWidget()
+        self.listwidget_filelist.itemSelectionChanged.connect(self.fileSelectionChanged)
+
+        vboxlayout_filelist = QtWidgets.QVBoxLayout()
+        vboxlayout_filelist.setContentsMargins(0, 0, 0, 0)
+        vboxlayout_filelist.setSpacing(0)
+        vboxlayout_filelist.addWidget(self.lineeditwidget_filesearch)
+        vboxlayout_filelist.addWidget(self.listwidget_filelist)
+
+        widget_filelist = QtWidgets.QWidget()
+        widget_filelist.setLayout(vboxlayout_filelist)
+
+        self.dockwidget_file = QtWidgets.QDockWidget(self.tr(u"File List"), self)
+        self.dockwidget_file.setObjectName(u"Files")
+        self.dockwidget_file.setWidget(widget_filelist)
+
 
         self.zoomWidget = ZoomWidget()
         self.setAcceptDrops(True)
 
-        self.canvas = self.labelList.canvas = Canvas(
-            epsilon=self._config["epsilon"],
-            double_click=self._config["canvas"]["double_click"],
-            num_backups=self._config["canvas"]["num_backups"],
+        self.canvas = self.listwidget_label.canvas = Canvas(
+            epsilon=self._dict_config["epsilon"],
+            double_click=self._dict_config["canvas"]["double_click"],
+            num_backups=self._dict_config["canvas"]["num_backups"],
         )
-        self.canvas.zoomRequest.connect(self.zoomRequest)
+        self.canvas.zoomRequest.connect(self.canvas_zoomRequest)
 
         scrollArea = QtWidgets.QScrollArea()
         scrollArea.setWidget(self.canvas)
@@ -181,40 +173,44 @@ class MainWindow(QtWidgets.QMainWindow):
         }
         self.canvas.scrollRequest.connect(self.scrollRequest)
 
-        self.canvas.newShape.connect(self.newShape)
-        self.canvas.shapeMoved.connect(self.setDirty)
-        self.canvas.selectionChanged.connect(self.shapeSelectionChanged)
-        self.canvas.drawingPolygon.connect(self.toggleDrawingSensitive)
+        self.canvas.newShape.connect(self.canvas_newShape)
+        self.canvas.shapeMoved.connect(self.canvas_shape_moved)
+        self.canvas.selectionChanged.connect(self.canvas_shape_SelectionChanged)
+        self.canvas.drawingPolygon.connect(self.canvas_toggle_drawingpolygon)
 
-        self.setCentralWidget(scrollArea)
+        self.setCentralWidget(scrollArea)       # 중앙에 scrollArea widget에 있고, 그 안에 canvas widget에 존재한다.
 
         features = QtWidgets.QDockWidget.DockWidgetFeatures()
-        for dock in ["flag_dock", "label_dock", "shape_dock", "file_dock"]:
-            if self._config[dock]["closable"]:
+        for dock in ["dockwidget_flag", "dockwidget_label", "dockwidget_uniqlabel", "dockwidget_file"]:
+            if self._dict_config[dock]["closable"]:
                 features = features | QtWidgets.QDockWidget.DockWidgetClosable
-            if self._config[dock]["floatable"]:
+            if self._dict_config[dock]["floatable"]:
                 features = features | QtWidgets.QDockWidget.DockWidgetFloatable
-            if self._config[dock]["movable"]:
+            if self._dict_config[dock]["movable"]:
                 features = features | QtWidgets.QDockWidget.DockWidgetMovable
             getattr(self, dock).setFeatures(features)
-            if self._config[dock]["show"] is False:
+            if self._dict_config[dock]["show"] is False:
                 getattr(self, dock).setVisible(False)
 
-        self.addDockWidget(Qt.RightDockWidgetArea, self.flag_dock)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.label_dock)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.shape_dock)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.file_dock)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_flag)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_uniqlabel)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_label)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_file)
+
+        #########################################################
 
         # Actions
-        action = functools.partial(utils.newAction, self)
-        shortcuts = self._config["shortcuts"]
+        action = functools.partial(utils.newAction, self)   # QAction 'newAction' 부분함수를 만든다.
+        shortcuts = self._dict_config["shortcuts"]
+
         quit = action(
-            self.tr("&Quit"),
-            self.close,
-            shortcuts["quit"],
-            "quit",
-            self.tr("Quit application"),
+            self.tr("&Quit"),                   # text
+            self.close,                         # slot
+            shortcuts["quit"],                  # shortcut
+            "quit",                             # icon name
+            self.tr("Quit application"),        # tip
         )
+        
         open_ = action(
             self.tr("&Open"),
             self.openFile,
@@ -281,20 +277,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
         saveAuto = action(
             text=self.tr("Save &Automatically"),
-            slot=lambda x: self.actions.saveAuto.setChecked(x),
+            slot=lambda x: self.struct_actions.saveAuto.setChecked(x),
             icon="save",
             tip=self.tr("Save automatically"),
             checkable=True,
             enabled=True,
         )
-        saveAuto.setChecked(self._config["auto_save"])
+        saveAuto.setChecked(self._dict_config["auto_save"])
 
         saveWithImageData = action(
             text="Save With Image Data",
             slot=self.enableSaveImageWithData,
             tip="Save image data in label file",
             checkable=True,
-            checked=self._config["store_data"],
+            checked=self._dict_config["store_data"],
         )
 
         close = action(
@@ -313,7 +309,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tr('Toggle "keep pevious annotation" mode'),
             checkable=True,
         )
-        toggle_keep_prev_mode.setChecked(self._config["keep_prev"])
+
+        toggle_keep_prev_mode.setChecked(self._dict_config["keep_prev"])
 
         createMode = action(
             self.tr("Create Polygons"),
@@ -363,6 +360,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tr("Start drawing linestrip. Ctrl+LeftClick ends creation."),
             enabled=False,
         )
+
         editMode = action(
             self.tr("Edit Polygons"),
             self.setEditMode,
@@ -549,13 +547,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # Lavel list context menu.
         labelMenu = QtWidgets.QMenu()
         utils.addActions(labelMenu, (edit, delete))
-        self.labelList.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.labelList.customContextMenuRequested.connect(
-            self.popLabelListMenu
-        )
+        self.listwidget_label.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.listwidget_label.customContextMenuRequested.connect(self.popLabelListMenu)
 
-        # Store actions for further handling.
-        self.actions = utils.struct(
+        # actions이라는 class에  attribute type으로  class item을 저장한다.  --> 추후 사용하기 위해 .
+        self.struct_actions = utils.struct(                # class 의 변수 dict type으로 저장만 한다.
             saveAuto=saveAuto,
             saveWithImageData=saveWithImageData,
             changeOutputDir=changeOutputDir,
@@ -579,6 +575,7 @@ class MainWindow(QtWidgets.QMainWindow):
             createLineMode=createLineMode,
             createPointMode=createPointMode,
             createLineStripMode=createLineStripMode,
+
             zoom=zoom,
             zoomIn=zoomIn,
             zoomOut=zoomOut,
@@ -590,8 +587,8 @@ class MainWindow(QtWidgets.QMainWindow):
             openNextImg=openNextImg,
             openPrevImg=openPrevImg,
             fileMenuActions=(open_, opendir, save, saveAs, close, quit),
-            tool=(),
-            # XXX: need to add some actions here to activate the shortcut
+            tool=(),       # 왼쪽 toolbar을 만들 때, 필요한 action을 만든다.
+            # Edit menu 밑에  추가되는 메뉴. 아래에 있는  menu 다음에  editMenu가 추가적으로 붙는다.
             editMenu=(
                 edit,
                 copy,
@@ -604,8 +601,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 None,
                 toggle_keep_prev_mode,
             ),
-            # menu shown at right click
-            menu=(
+            # menu shown at right click이거도 하지만,   Edit Menu에 추가되는 메뉴이기도 함.
+            menu_canvas=(
                 createMode,
                 createRectangleMode,
                 createCircleMode,
@@ -635,11 +632,13 @@ class MainWindow(QtWidgets.QMainWindow):
             onShapesPresent=(saveAs, hideAll, showAll),
         )
 
-        self.canvas.edgeSelected.connect(self.canvasShapeEdgeSelected)
-        self.canvas.vertexSelected.connect(self.actions.removePoint.setEnabled)
+        self.canvas.edgeSelected.connect(self.canvas_shape_edge_selected)
+        self.canvas.vertexSelected.connect(self.struct_actions.removePoint.setEnabled)
 
-        self.menus = utils.struct(
-            file=self.menu(self.tr("&File")),
+        ###################################################################################################
+        #  head linebar menu
+        self.struct_head_menus = utils.struct(                  # struct class을 만들어,  menus에 저장한다.
+            file=self.menu(self.tr("&File")),       # menubar을 만들어 return하고,  'file' attribute에 저장한다.
             edit=self.menu(self.tr("&Edit")),
             view=self.menu(self.tr("&View")),
             help=self.menu(self.tr("&Help")),
@@ -648,13 +647,13 @@ class MainWindow(QtWidgets.QMainWindow):
         )
 
         utils.addActions(
-            self.menus.file,
+            self.struct_head_menus.file,
             (
                 open_,
                 openNextImg,
                 openPrevImg,
                 opendir,
-                self.menus.recentFiles,
+                self.struct_head_menus.recentFiles,
                 save,
                 saveAs,
                 saveAuto,
@@ -666,14 +665,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 quit,
             ),
         )
-        utils.addActions(self.menus.help, (help,))
+        utils.addActions(self.struct_head_menus.help, (help,))
         utils.addActions(
-            self.menus.view,
+            self.struct_head_menus.view,
             (
-                self.flag_dock.toggleViewAction(),
-                self.label_dock.toggleViewAction(),
-                self.shape_dock.toggleViewAction(),
-                self.file_dock.toggleViewAction(),
+                self.dockwidget_flag.toggleViewAction(),
+                self.dockwidget_uniqlabel.toggleViewAction(),
+                self.dockwidget_label.toggleViewAction(),
+                self.dockwidget_file.toggleViewAction(),
                 None,
                 fill_drawing,
                 None,
@@ -691,11 +690,12 @@ class MainWindow(QtWidgets.QMainWindow):
             ),
         )
 
-        self.menus.file.aboutToShow.connect(self.updateFileMenu)
+        self.struct_head_menus.file.aboutToShow.connect(self.updateFileMenu)
 
-        # Custom context menu for the canvas widget:
-        utils.addActions(self.canvas.menus[0], self.actions.menu)
-        utils.addActions(
+        #######################################################################################################
+        # labelme canvas 에는 2개의  menu가 있다.
+        utils.addActions(self.canvas.menus[0], self.struct_actions.menu_canvas)     # 0: right-click without selection and dragging of shapes
+        utils.addActions(                                                           # 1: right-click with selection and dragging of shapes
             self.canvas.menus[1],
             (
                 action("&Copy here", self.copyShape),
@@ -703,16 +703,17 @@ class MainWindow(QtWidgets.QMainWindow):
             ),
         )
 
-        self.tools = self.toolbar("Tools")
-        # Menu buttons on Left
-        self.actions.tool = (
+        #######################################################################################################
+        self.toolbar = self.make_toolbar("Tools")      # 화면의 왼쪽에 toolbar을 만든다
+        # Menu buttons on Left, 화면의 왼쪽 toolbar에 존재하는 menu들 . self.populateModeActions()에서  수행된다.
+        self.struct_actions.menu_toolbar = (
             open_,
             opendir,
             openNextImg,
             openPrevImg,
             save,
             deleteFile,
-            None,
+            None,               # 메뉴 seperator이다
             createMode,
             editMode,
             copy,
@@ -724,10 +725,12 @@ class MainWindow(QtWidgets.QMainWindow):
             fitWidth,
         )
 
+        #######################################################################################################
         self.statusBar().showMessage(self.tr("%s started.") % __appname__)
         self.statusBar().show()
 
-        if output_file is not None and self._config["auto_save"]:
+        #######################################################################################################
+        if output_file is not None and self._dict_config["auto_save"]:
             logger.warn(
                 "If `auto_save` argument is True, `output_file` argument "
                 "is ignored and output filename is automatically "
@@ -756,8 +759,8 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.filename = filename
 
-        if config["file_search"]:
-            self.fileSearch.setText(config["file_search"])
+        if dict_config["file_search"]:
+            self.lineeditwidget_filesearch.setText(dict_config["file_search"])
             self.fileSearchChanged()
 
         # XXX: Could be completely declarative.
@@ -791,50 +794,56 @@ class MainWindow(QtWidgets.QMainWindow):
         # if self.firstStart:
         #    QWhatsThis.enterWhatsThisMode()
 
-    def menu(self, title, actions=None):
+    def menu(self, title, actions=None):        # 새로운 menubar을 만들어 return한다
         menu = self.menuBar().addMenu(title)
         if actions:
             utils.addActions(menu, actions)
         return menu
 
-    def toolbar(self, title, actions=None):
-        toolbar = ToolBar(title)
+    def make_toolbar(self, title, actions=None):
+        toolbar = ToolBar(title)            # toolbar class을 만들어 반환한다.
         toolbar.setObjectName("%sToolBar" % title)
         # toolbar.setOrientation(Qt.Vertical)
         toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         if actions:
             utils.addActions(toolbar, actions)
-        self.addToolBar(Qt.LeftToolBarArea, toolbar)
+        self.addToolBar(Qt.LeftToolBarArea, toolbar)            # 방금 생성한 toolbar을  화면의 왼쪽에  위치시킨다.
         return toolbar
 
     # Support Functions
 
     def noShapes(self):
-        return not len(self.labelList)
+        return not len(self.listwidget_label)
 
     def populateModeActions(self):
-        tool, menu = self.actions.tool, self.actions.menu
-        self.tools.clear()
-        utils.addActions(self.tools, tool)
+        '''
+        여기서는  메뉴들을 추가 조정한다.
+        self.tools <- tool
+        self.canvas.menus <- menu
+        self.menus.edit <- actions + self.actions.editMenu
+        '''
+        tool, menu = self.struct_actions.menu_toolbar, self.struct_actions.menu_canvas
+        self.toolbar.clear()
+        utils.addActions(self.toolbar, tool)
         self.canvas.menus[0].clear()
         utils.addActions(self.canvas.menus[0], menu)
-        self.menus.edit.clear()
+        self.struct_head_menus.edit.clear()
         actions = (
-            self.actions.createMode,
-            self.actions.createRectangleMode,
-            self.actions.createCircleMode,
-            self.actions.createLineMode,
-            self.actions.createPointMode,
-            self.actions.createLineStripMode,
-            self.actions.editMode,
+            self.struct_actions.createMode,
+            self.struct_actions.createRectangleMode,
+            self.struct_actions.createCircleMode,
+            self.struct_actions.createLineMode,
+            self.struct_actions.createPointMode,
+            self.struct_actions.createLineStripMode,
+            self.struct_actions.editMode,
         )
-        utils.addActions(self.menus.edit, actions + self.actions.editMenu)
+        utils.addActions(self.struct_head_menus.edit, actions + self.struct_actions.editMenu)
 
-    def setDirty(self):
-        # Even if we autosave the file, we keep the ability to undo
-        self.actions.undo.setEnabled(self.canvas.isShapeRestorable)
+    def canvas_shape_moved(self):
+        # listwidget_flag 에서 item 이 변화면 call 된다.
+        self.struct_actions.undo.setEnabled(self.canvas.isShapeRestorable)
 
-        if self._config["auto_save"] or self.actions.saveAuto.isChecked():
+        if self._dict_config["auto_save"] or self.struct_actions.saveAuto.isChecked():
             label_file = osp.splitext(self.imagePath)[0] + ".json"
             if self.output_dir:
                 label_file_without_path = osp.basename(label_file)
@@ -842,7 +851,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.saveLabels(label_file)
             return
         self.dirty = True
-        self.actions.save.setEnabled(True)
+        self.struct_actions.save.setEnabled(True)
         title = __appname__
         if self.filename is not None:
             title = "{} - {}*".format(title, self.filename)
@@ -850,32 +859,32 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def setClean(self):
         self.dirty = False
-        self.actions.save.setEnabled(False)
-        self.actions.createMode.setEnabled(True)
-        self.actions.createRectangleMode.setEnabled(True)
-        self.actions.createCircleMode.setEnabled(True)
-        self.actions.createLineMode.setEnabled(True)
-        self.actions.createPointMode.setEnabled(True)
-        self.actions.createLineStripMode.setEnabled(True)
+        self.struct_actions.save.setEnabled(False)
+        self.struct_actions.createMode.setEnabled(True)
+        self.struct_actions.createRectangleMode.setEnabled(True)
+        self.struct_actions.createCircleMode.setEnabled(True)
+        self.struct_actions.createLineMode.setEnabled(True)
+        self.struct_actions.createPointMode.setEnabled(True)
+        self.struct_actions.createLineStripMode.setEnabled(True)
         title = __appname__
         if self.filename is not None:
             title = "{} - {}".format(title, self.filename)
         self.setWindowTitle(title)
 
         if self.hasLabelFile():
-            self.actions.deleteFile.setEnabled(True)
+            self.struct_actions.deleteFile.setEnabled(True)
         else:
-            self.actions.deleteFile.setEnabled(False)
+            self.struct_actions.deleteFile.setEnabled(False)
 
     def toggleActions(self, value=True):
         """Enable/Disable widgets which depend on an opened image."""
-        for z in self.actions.zoomActions:
+        for z in self.struct_actions.zoomActions:
             z.setEnabled(value)
-        for action in self.actions.onLoadActive:
+        for action in self.struct_actions.onLoadActive:
             action.setEnabled(value)
 
-    def canvasShapeEdgeSelected(self, selected, shape):
-        self.actions.addPointToEdge.setEnabled(
+    def canvas_shape_edge_selected(self, selected, shape):
+        self.struct_actions.addPointToEdge.setEnabled(
             selected and shape and shape.canAddPoint()
         )
 
@@ -886,7 +895,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusBar().showMessage(message, delay)
 
     def resetState(self):
-        self.labelList.clear()
+        self.listwidget_label.clear()
         self.filename = None
         self.imagePath = None
         self.imageData = None
@@ -895,7 +904,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canvas.resetState()
 
     def currentItem(self):
-        items = self.labelList.selectedItems()
+        items = self.listwidget_label.selectedItems()
         if items:
             return items[0]
         return None
@@ -911,80 +920,87 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def undoShapeEdit(self):
         self.canvas.restoreShape()
-        self.labelList.clear()
+        self.listwidget_label.clear()
         self.loadShapes(self.canvas.shapes)
-        self.actions.undo.setEnabled(self.canvas.isShapeRestorable)
+        self.struct_actions.undo.setEnabled(self.canvas.isShapeRestorable)
 
     def tutorial(self):
         url = "https://github.com/wkentaro/labelme/tree/master/examples/tutorial"  # NOQA
         webbrowser.open(url)
 
-    def toggleDrawingSensitive(self, drawing=True):
+    def canvas_toggle_drawingpolygon(self, drawing=True):
         """Toggle drawing sensitive.
 
         In the middle of drawing, toggling between modes should be disabled.
         """
-        self.actions.editMode.setEnabled(not drawing)
-        self.actions.undoLastPoint.setEnabled(drawing)
-        self.actions.undo.setEnabled(not drawing)
-        self.actions.delete.setEnabled(not drawing)
+        self.struct_actions.editMode.setEnabled(not drawing)
+        self.struct_actions.undoLastPoint.setEnabled(drawing)
+        self.struct_actions.undo.setEnabled(not drawing)
+        self.struct_actions.delete.setEnabled(not drawing)
 
     def toggleDrawMode(self, edit=True, createMode="polygon"):
         self.canvas.setEditing(edit)
         self.canvas.createMode = createMode
         if edit:
-            self.actions.createMode.setEnabled(True)
-            self.actions.createRectangleMode.setEnabled(True)
-            self.actions.createCircleMode.setEnabled(True)
-            self.actions.createLineMode.setEnabled(True)
-            self.actions.createPointMode.setEnabled(True)
-            self.actions.createLineStripMode.setEnabled(True)
+            self.struct_actions.createMode.setEnabled(True)
+            self.struct_actions.createRectangleMode.setEnabled(True)
+            self.struct_actions.createCircleMode.setEnabled(True)
+            self.struct_actions.createLineMode.setEnabled(True)
+            self.struct_actions.createPointMode.setEnabled(True)
+            self.struct_actions.createLineStripMode.setEnabled(True)
+
         else:
             if createMode == "polygon":
-                self.actions.createMode.setEnabled(False)
-                self.actions.createRectangleMode.setEnabled(True)
-                self.actions.createCircleMode.setEnabled(True)
-                self.actions.createLineMode.setEnabled(True)
-                self.actions.createPointMode.setEnabled(True)
-                self.actions.createLineStripMode.setEnabled(True)
+                self.struct_actions.createMode.setEnabled(False)
+                self.struct_actions.createRectangleMode.setEnabled(True)
+                self.struct_actions.createCircleMode.setEnabled(True)
+                self.struct_actions.createLineMode.setEnabled(True)
+                self.struct_actions.createPointMode.setEnabled(True)
+                self.struct_actions.createLineStripMode.setEnabled(True)
+
             elif createMode == "rectangle":
-                self.actions.createMode.setEnabled(True)
-                self.actions.createRectangleMode.setEnabled(False)
-                self.actions.createCircleMode.setEnabled(True)
-                self.actions.createLineMode.setEnabled(True)
-                self.actions.createPointMode.setEnabled(True)
-                self.actions.createLineStripMode.setEnabled(True)
+                self.struct_actions.createMode.setEnabled(True)
+                self.struct_actions.createRectangleMode.setEnabled(False)
+                self.struct_actions.createCircleMode.setEnabled(True)
+                self.struct_actions.createLineMode.setEnabled(True)
+                self.struct_actions.createPointMode.setEnabled(True)
+                self.struct_actions.createLineStripMode.setEnabled(True)
+
             elif createMode == "line":
-                self.actions.createMode.setEnabled(True)
-                self.actions.createRectangleMode.setEnabled(True)
-                self.actions.createCircleMode.setEnabled(True)
-                self.actions.createLineMode.setEnabled(False)
-                self.actions.createPointMode.setEnabled(True)
-                self.actions.createLineStripMode.setEnabled(True)
+                self.struct_actions.createMode.setEnabled(True)
+                self.struct_actions.createRectangleMode.setEnabled(True)
+                self.struct_actions.createCircleMode.setEnabled(True)
+                self.struct_actions.createLineMode.setEnabled(False)
+                self.struct_actions.createPointMode.setEnabled(True)
+                self.struct_actions.createLineStripMode.setEnabled(True)
+
             elif createMode == "point":
-                self.actions.createMode.setEnabled(True)
-                self.actions.createRectangleMode.setEnabled(True)
-                self.actions.createCircleMode.setEnabled(True)
-                self.actions.createLineMode.setEnabled(True)
-                self.actions.createPointMode.setEnabled(False)
-                self.actions.createLineStripMode.setEnabled(True)
+                self.struct_actions.createMode.setEnabled(True)
+                self.struct_actions.createRectangleMode.setEnabled(True)
+                self.struct_actions.createCircleMode.setEnabled(True)
+                self.struct_actions.createLineMode.setEnabled(True)
+                self.struct_actions.createPointMode.setEnabled(False)
+                self.struct_actions.createLineStripMode.setEnabled(True)
+
             elif createMode == "circle":
-                self.actions.createMode.setEnabled(True)
-                self.actions.createRectangleMode.setEnabled(True)
-                self.actions.createCircleMode.setEnabled(False)
-                self.actions.createLineMode.setEnabled(True)
-                self.actions.createPointMode.setEnabled(True)
-                self.actions.createLineStripMode.setEnabled(True)
+                self.struct_actions.createMode.setEnabled(True)
+                self.struct_actions.createRectangleMode.setEnabled(True)
+                self.struct_actions.createCircleMode.setEnabled(False)
+                self.struct_actions.createLineMode.setEnabled(True)
+                self.struct_actions.createPointMode.setEnabled(True)
+                self.struct_actions.createLineStripMode.setEnabled(True)
+
             elif createMode == "linestrip":
-                self.actions.createMode.setEnabled(True)
-                self.actions.createRectangleMode.setEnabled(True)
-                self.actions.createCircleMode.setEnabled(True)
-                self.actions.createLineMode.setEnabled(True)
-                self.actions.createPointMode.setEnabled(True)
-                self.actions.createLineStripMode.setEnabled(False)
+                self.struct_actions.createMode.setEnabled(True)
+                self.struct_actions.createRectangleMode.setEnabled(True)
+                self.struct_actions.createCircleMode.setEnabled(True)
+                self.struct_actions.createLineMode.setEnabled(True)
+                self.struct_actions.createPointMode.setEnabled(True)
+                self.struct_actions.createLineStripMode.setEnabled(False)
+
             else:
                 raise ValueError("Unsupported createMode: %s" % createMode)
-        self.actions.editMode.setEnabled(not edit)
+        self.struct_actions.editMode.setEnabled(not edit)
 
     def setEditMode(self):
         self.toggleDrawMode(True)
@@ -995,7 +1011,7 @@ class MainWindow(QtWidgets.QMainWindow):
         def exists(filename):
             return osp.exists(str(filename))
 
-        menu = self.menus.recentFiles
+        menu = self.struct_head_menus.recentFiles
         menu.clear()
         files = [f for f in self.recentFiles if f != current and exists(f)]
         for i, f in enumerate(files):
@@ -1007,16 +1023,16 @@ class MainWindow(QtWidgets.QMainWindow):
             menu.addAction(action)
 
     def popLabelListMenu(self, point):
-        self.menus.labelList.exec_(self.labelList.mapToGlobal(point))
+        self.struct_head_menus.labelList.exec_(self.listwidget_label.mapToGlobal(point))
 
     def validateLabel(self, label):
         # no validation
-        if self._config["validate_label"] is None:
+        if self._dict_config["validate_label"] is None:
             return True
 
-        for i in range(self.uniqLabelList.count()):
-            label_i = self.uniqLabelList.item(i).data(Qt.UserRole)
-            if self._config["validate_label"] in ["exact"]:
+        for i in range(self.uniqlistwidget_label.count()):
+            label_i = self.uniqlistwidget_label.item(i).data(Qt.UserRole)
+            if self._dict_config["validate_label"] in ["exact"]:
                 if label_i == label:
                     return True
         return False
@@ -1045,7 +1061,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.errorMessage(
                 self.tr("Invalid label"),
                 self.tr("Invalid label '{}' with validation type '{}'").format(
-                    text, self._config["validate_label"]
+                    text, self._dict_config["validate_label"]
                 ),
             )
             return
@@ -1056,21 +1072,21 @@ class MainWindow(QtWidgets.QMainWindow):
             item.setText(shape.label)
         else:
             item.setText("{} ({})".format(shape.label, shape.group_id))
-        self.setDirty()
-        if not self.uniqLabelList.findItemsByLabel(shape.label):
+        self.canvas_shape_moved()
+        if not self.uniqlistwidget_label.findItemsByLabel(shape.label):
             item = QtWidgets.QListWidgetItem()
             item.setData(Qt.UserRole, shape.label)
-            self.uniqLabelList.addItem(item)
+            self.uniqlistwidget_label.addItem(item)
 
     def fileSearchChanged(self):
         self.importDirImages(
             self.lastOpenDir,
-            pattern=self.fileSearch.text(),
+            pattern=self.lineeditwidget_filesearch.text(),
             load=False,
         )
 
     def fileSelectionChanged(self):
-        items = self.fileListWidget.selectedItems()
+        items = self.listwidget_filelist.selectedItems()
         if not items:
             return
         item = items[0]
@@ -1085,22 +1101,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.loadFile(filename)
 
     # React to canvas signals.
-    def shapeSelectionChanged(self, selected_shapes):
+    def canvas_shape_SelectionChanged(self, selected_shapes):
         self._noSelectionSlot = True
         for shape in self.canvas.selectedShapes:
             shape.selected = False
-        self.labelList.clearSelection()
+        self.listwidget_label.clearSelection()
         self.canvas.selectedShapes = selected_shapes
         for shape in self.canvas.selectedShapes:
             shape.selected = True
-            item = self.labelList.findItemByShape(shape)
-            self.labelList.selectItem(item)
-            self.labelList.scrollToItem(item)
+            item = self.listwidget_label.findItemByShape(shape)
+            self.listwidget_label.selectItem(item)
+            self.listwidget_label.scrollToItem(item)
         self._noSelectionSlot = False
         n_selected = len(selected_shapes)
-        self.actions.delete.setEnabled(n_selected)
-        self.actions.copy.setEnabled(n_selected)
-        self.actions.edit.setEnabled(n_selected == 1)
+        self.struct_actions.delete.setEnabled(n_selected)
+        self.struct_actions.copy.setEnabled(n_selected)
+        self.struct_actions.edit.setEnabled(n_selected == 1)
 
     def addLabel(self, shape):
         if shape.group_id is None:
@@ -1108,14 +1124,14 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             text = "{} ({})".format(shape.label, shape.group_id)
         label_list_item = LabelListWidgetItem(text, shape)
-        self.labelList.addItem(label_list_item)
-        if not self.uniqLabelList.findItemsByLabel(shape.label):
-            item = self.uniqLabelList.createItemFromLabel(shape.label)
-            self.uniqLabelList.addItem(item)
+        self.listwidget_label.addItem(label_list_item)
+        if not self.uniqlistwidget_label.findItemsByLabel(shape.label):
+            item = self.uniqlistwidget_label.createItemFromLabel(shape.label)
+            self.uniqlistwidget_label.addItem(item)
             rgb = self._get_rgb_by_label(shape.label)
-            self.uniqLabelList.setItemLabel(item, shape.label, rgb)
+            self.uniqlistwidget_label.setItemLabel(item, shape.label, rgb)
         self.labelDialog.addLabelHistory(shape.label)
-        for action in self.actions.onShapesPresent:
+        for action in self.struct_actions.onShapesPresent:
             action.setEnabled(True)
 
         rgb = self._get_rgb_by_label(shape.label)
@@ -1134,30 +1150,30 @@ class MainWindow(QtWidgets.QMainWindow):
         shape.select_fill_color = QtGui.QColor(r, g, b, 155)
 
     def _get_rgb_by_label(self, label):
-        if self._config["shape_color"] == "auto":
-            item = self.uniqLabelList.findItemsByLabel(label)[0]
-            label_id = self.uniqLabelList.indexFromItem(item).row() + 1
-            label_id += self._config["shift_auto_shape_color"]
+        if self._dict_config["shape_color"] == "auto":
+            item = self.uniqlistwidget_label.findItemsByLabel(label)[0]
+            label_id = self.uniqlistwidget_label.indexFromItem(item).row() + 1
+            label_id += self._dict_config["shift_auto_shape_color"]
             return LABEL_COLORMAP[label_id % len(LABEL_COLORMAP)]
         elif (
-            self._config["shape_color"] == "manual"
-            and self._config["label_colors"]
-            and label in self._config["label_colors"]
+            self._dict_config["shape_color"] == "manual"
+            and self._dict_config["label_colors"]
+            and label in self._dict_config["label_colors"]
         ):
-            return self._config["label_colors"][label]
-        elif self._config["default_shape_color"]:
-            return self._config["default_shape_color"]
+            return self._dict_config["label_colors"][label]
+        elif self._dict_config["default_shape_color"]:
+            return self._dict_config["default_shape_color"]
 
     def remLabels(self, shapes):
         for shape in shapes:
-            item = self.labelList.findItemByShape(shape)
-            self.labelList.removeItem(item)
+            item = self.listwidget_label.findItemByShape(shape)
+            self.listwidget_label.removeItem(item)
 
     def loadShapes(self, shapes, replace=True):
         self._noSelectionSlot = True
         for shape in shapes:
             self.addLabel(shape)
-        self.labelList.clearSelection()
+        self.listwidget_label.clearSelection()
         self._noSelectionSlot = False
         self.canvas.loadShapes(shapes, replace=replace)
 
@@ -1185,8 +1201,8 @@ class MainWindow(QtWidgets.QMainWindow):
             shape.close()
 
             default_flags = {}
-            if self._config["label_flags"]:
-                for pattern, keys in self._config["label_flags"].items():
+            if self._dict_config["label_flags"]:
+                for pattern, keys in self._dict_config["label_flags"].items():
                     if re.match(pattern, label):
                         for key in keys:
                             default_flags[key] = False
@@ -1198,12 +1214,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.loadShapes(s)
 
     def loadFlags(self, flags):
-        self.flag_widget.clear()
+        self.listwidget_flag.clear()
         for key, flag in flags.items():
             item = QtWidgets.QListWidgetItem(key)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             item.setCheckState(Qt.Checked if flag else Qt.Unchecked)
-            self.flag_widget.addItem(item)
+            self.listwidget_flag.addItem(item)
 
     def saveLabels(self, filename):
         lf = LabelFile()
@@ -1221,16 +1237,16 @@ class MainWindow(QtWidgets.QMainWindow):
             )
             return data
 
-        shapes = [format_shape(item.shape()) for item in self.labelList]
+        shapes = [format_shape(item.shape()) for item in self.listwidget_label]
         flags = {}
-        for i in range(self.flag_widget.count()):
-            item = self.flag_widget.item(i)
+        for i in range(self.listwidget_flag.count()):
+            item = self.listwidget_flag.item(i)
             key = item.text()
             flag = item.checkState() == Qt.Checked
             flags[key] = flag
         try:
             imagePath = osp.relpath(self.imagePath, osp.dirname(filename))
-            imageData = self.imageData if self._config["store_data"] else None
+            imageData = self.imageData if self._dict_config["store_data"] else None
             if osp.dirname(filename) and not osp.exists(osp.dirname(filename)):
                 os.makedirs(osp.dirname(filename))
             lf.save(
@@ -1244,7 +1260,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 flags=flags,
             )
             self.labelFile = lf
-            items = self.fileListWidget.findItems(
+            items = self.listwidget_filelist.findItems(
                 self.imagePath, Qt.MatchExactly
             )
             if len(items) > 0:
@@ -1262,17 +1278,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def copySelectedShape(self):
         added_shapes = self.canvas.copySelectedShapes()
-        self.labelList.clearSelection()
+        self.listwidget_label.clearSelection()
         for shape in added_shapes:
             self.addLabel(shape)
-        self.setDirty()
+        self.canvas_shape_moved()
 
     def labelSelectionChanged(self):
         if self._noSelectionSlot:
             return
         if self.canvas.editing():
             selected_shapes = []
-            for item in self.labelList.selectedItems():
+            for item in self.listwidget_label.selectedItems():
                 selected_shapes.append(item.shape())
             if selected_shapes:
                 self.canvas.selectShapes(selected_shapes)
@@ -1284,23 +1300,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canvas.setShapeVisible(shape, item.checkState() == Qt.Checked)
 
     def labelOrderChanged(self):
-        self.setDirty()
-        self.canvas.loadShapes([item.shape() for item in self.labelList])
+        self.canvas_shape_moved()
+        self.canvas.loadShapes([item.shape() for item in self.listwidget_label])
 
     # Callback functions:
 
-    def newShape(self):
+    def canvas_newShape(self):
         """Pop-up and give focus to the label editor.
 
         position MUST be in global coordinates.
         """
-        items = self.uniqLabelList.selectedItems()
+        items = self.uniqlistwidget_label.selectedItems()
         text = None
         if items:
             text = items[0].data(Qt.UserRole)
         flags = {}
         group_id = None
-        if self._config["display_label_popup"] or not text:
+        if self._dict_config["display_label_popup"] or not text:
             previous_text = self.labelDialog.edit.text()
             text, flags, group_id = self.labelDialog.popUp(text)
             if not text:
@@ -1310,19 +1326,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self.errorMessage(
                 self.tr("Invalid label"),
                 self.tr("Invalid label '{}' with validation type '{}'").format(
-                    text, self._config["validate_label"]
+                    text, self._dict_config["validate_label"]
                 ),
             )
             text = ""
         if text:
-            self.labelList.clearSelection()
+            self.listwidget_label.clearSelection()
             shape = self.canvas.setLastLabel(text, flags)
             shape.group_id = group_id
             self.addLabel(shape)
-            self.actions.editMode.setEnabled(True)
-            self.actions.undoLastPoint.setEnabled(False)
-            self.actions.undo.setEnabled(True)
-            self.setDirty()
+            self.struct_actions.editMode.setEnabled(True)
+            self.struct_actions.undoLastPoint.setEnabled(False)
+            self.struct_actions.undo.setEnabled(True)
+            self.canvas_shape_moved()
         else:
             self.canvas.undoLastLine()
             self.canvas.shapesBackups.pop()
@@ -1338,8 +1354,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scroll_values[orientation][self.filename] = value
 
     def setZoom(self, value):
-        self.actions.fitWidth.setChecked(False)
-        self.actions.fitWindow.setChecked(False)
+        self.struct_actions.fitWidth.setChecked(False)
+        self.struct_actions.fitWindow.setChecked(False)
         self.zoomMode = self.MANUAL_ZOOM
         self.zoomWidget.setValue(value)
         self.zoom_values[self.filename] = (self.zoomMode, value)
@@ -1352,7 +1368,7 @@ class MainWindow(QtWidgets.QMainWindow):
             zoom_value = math.floor(zoom_value)
         self.setZoom(zoom_value)
 
-    def zoomRequest(self, delta, pos):
+    def canvas_zoomRequest(self, delta, pos):
         canvas_width_old = self.canvas.width()
         units = 1.1
         if delta < 0:
@@ -1377,13 +1393,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def setFitWindow(self, value=True):
         if value:
-            self.actions.fitWidth.setChecked(False)
+            self.struct_actions.fitWidth.setChecked(False)
         self.zoomMode = self.FIT_WINDOW if value else self.MANUAL_ZOOM
         self.adjustScale()
 
     def setFitWidth(self, value=True):
         if value:
-            self.actions.fitWindow.setChecked(False)
+            self.struct_actions.fitWindow.setChecked(False)
         self.zoomMode = self.FIT_WIDTH if value else self.MANUAL_ZOOM
         self.adjustScale()
 
@@ -1412,17 +1428,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.brightnessContrast_values[self.filename] = (brightness, contrast)
 
     def togglePolygons(self, value):
-        for item in self.labelList:
+        for item in self.listwidget_label:
             item.setCheckState(Qt.Checked if value else Qt.Unchecked)
 
     def loadFile(self, filename=None):
         """Load the specified file, or the last opened file if None."""
         # changing fileListWidget loads file
         if filename in self.imageList and (
-            self.fileListWidget.currentRow() != self.imageList.index(filename)
+            self.listwidget_filelist.currentRow() != self.imageList.index(filename)
         ):
-            self.fileListWidget.setCurrentRow(self.imageList.index(filename))
-            self.fileListWidget.repaint()
+            self.listwidget_filelist.setCurrentRow(self.imageList.index(filename))
+            self.listwidget_filelist.repaint()
             return
 
         self.resetState()
@@ -1487,18 +1503,18 @@ class MainWindow(QtWidgets.QMainWindow):
             return False
         self.image = image
         self.filename = filename
-        if self._config["keep_prev"]:
+        if self._dict_config["keep_prev"]:
             prev_shapes = self.canvas.shapes
         self.canvas.loadPixmap(QtGui.QPixmap.fromImage(image))
-        flags = {k: False for k in self._config["flags"] or []}
+        flags = {k: False for k in self._dict_config["flags"] or []}
         if self.labelFile:
             self.loadLabels(self.labelFile.shapes)
             if self.labelFile.flags is not None:
                 flags.update(self.labelFile.flags)
         self.loadFlags(flags)
-        if self._config["keep_prev"] and self.noShapes():
+        if self._dict_config["keep_prev"] and self.noShapes():
             self.loadShapes(prev_shapes, replace=False)
-            self.setDirty()
+            self.canvas_shape_moved()
         else:
             self.setClean()
         self.canvas.setEnabled(True)
@@ -1507,7 +1523,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.filename in self.zoom_values:
             self.zoomMode = self.zoom_values[self.filename][0]
             self.setZoom(self.zoom_values[self.filename][1])
-        elif is_initial_load or not self._config["keep_prev_scale"]:
+        elif is_initial_load or not self._dict_config["keep_prev_scale"]:
             self.adjustScale(initial=True)
         # set scroll values
         for orientation in self.scroll_values:
@@ -1524,11 +1540,11 @@ class MainWindow(QtWidgets.QMainWindow):
         brightness, contrast = self.brightnessContrast_values.get(
             self.filename, (None, None)
         )
-        if self._config["keep_prev_brightness"] and self.recentFiles:
+        if self._dict_config["keep_prev_brightness"] and self.recentFiles:
             brightness, _ = self.brightnessContrast_values.get(
                 self.recentFiles[0], (None, None)
             )
-        if self._config["keep_prev_contrast"] and self.recentFiles:
+        if self._dict_config["keep_prev_contrast"] and self.recentFiles:
             _, contrast = self.brightnessContrast_values.get(
                 self.recentFiles[0], (None, None)
             )
@@ -1585,8 +1601,8 @@ class MainWindow(QtWidgets.QMainWindow):
         return w / self.canvas.pixmap.width()
 
     def enableSaveImageWithData(self, enabled):
-        self._config["store_data"] = enabled
-        self.actions.saveWithImageData.setChecked(enabled)
+        self._dict_config["store_data"] = enabled
+        self.struct_actions.saveWithImageData.setChecked(enabled)
 
     def closeEvent(self, event):
         if not self.mayContinue():
@@ -1627,9 +1643,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loadFile(filename)
 
     def openPrevImg(self, _value=False):
-        keep_prev = self._config["keep_prev"]
+        keep_prev = self._dict_config["keep_prev"]
         if Qt.KeyboardModifiers() == (Qt.ControlModifier | Qt.ShiftModifier):
-            self._config["keep_prev"] = True
+            self._dict_config["keep_prev"] = True
 
         if not self.mayContinue():
             return
@@ -1646,12 +1662,12 @@ class MainWindow(QtWidgets.QMainWindow):
             if filename:
                 self.loadFile(filename)
 
-        self._config["keep_prev"] = keep_prev
+        self._dict_config["keep_prev"] = keep_prev
 
     def openNextImg(self, _value=False, load=True):
-        keep_prev = self._config["keep_prev"]
+        keep_prev = self._dict_config["keep_prev"]
         if Qt.KeyboardModifiers() == (Qt.ControlModifier | Qt.ShiftModifier):
-            self._config["keep_prev"] = True
+            self._dict_config["keep_prev"] = True
 
         if not self.mayContinue():
             return
@@ -1673,7 +1689,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.filename and load:
             self.loadFile(self.filename)
 
-        self._config["keep_prev"] = keep_prev
+        self._dict_config["keep_prev"] = keep_prev
 
     def openFile(self, _value=False):
         if not self.mayContinue():
@@ -1730,10 +1746,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if current_filename in self.imageList:
             # retain currently selected file
-            self.fileListWidget.setCurrentRow(
+            self.listwidget_filelist.setCurrentRow(
                 self.imageList.index(current_filename)
             )
-            self.fileListWidget.repaint()
+            self.listwidget_filelist.repaint()
 
     def saveFile(self, _value=False):
         assert not self.image.isNull(), "cannot save empty image"
@@ -1796,7 +1812,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setClean()
         self.toggleActions(False)
         self.canvas.setEnabled(False)
-        self.actions.saveAs.setEnabled(False)
+        self.struct_actions.saveAs.setEnabled(False)
 
     def getLabelFile(self):
         if self.filename.lower().endswith(".json"):
@@ -1821,7 +1837,7 @@ class MainWindow(QtWidgets.QMainWindow):
             os.remove(label_file)
             logger.info("Label file is removed: {}".format(label_file))
 
-            item = self.fileListWidget.currentItem()
+            item = self.listwidget_filelist.currentItem()
             item.setCheckState(Qt.Unchecked)
 
             self.resetState()
@@ -1874,16 +1890,16 @@ class MainWindow(QtWidgets.QMainWindow):
         return osp.dirname(str(self.filename)) if self.filename else "."
 
     def toggleKeepPrevMode(self):
-        self._config["keep_prev"] = not self._config["keep_prev"]
+        self._dict_config["keep_prev"] = not self._dict_config["keep_prev"]
 
     def removeSelectedPoint(self):
         self.canvas.removeSelectedPoint()
         if not self.canvas.hShape.points:
             self.canvas.deleteShape(self.canvas.hShape)
             self.remLabels([self.canvas.hShape])
-            self.setDirty()
+            self.canvas_shape_moved()
             if self.noShapes():
-                for action in self.actions.onShapesPresent:
+                for action in self.struct_actions.onShapesPresent:
                     action.setEnabled(False)
 
     def deleteSelectedShape(self):
@@ -1896,21 +1912,21 @@ class MainWindow(QtWidgets.QMainWindow):
             self, self.tr("Attention"), msg, yes | no, yes
         ):
             self.remLabels(self.canvas.deleteSelected())
-            self.setDirty()
+            self.canvas_shape_moved()
             if self.noShapes():
-                for action in self.actions.onShapesPresent:
+                for action in self.struct_actions.onShapesPresent:
                     action.setEnabled(False)
 
     def copyShape(self):
         self.canvas.endMove(copy=True)
-        self.labelList.clearSelection()
+        self.listwidget_label.clearSelection()
         for shape in self.canvas.selectedShapes:
             self.addLabel(shape)
-        self.setDirty()
+        self.canvas_shape_moved()
 
     def moveShape(self):
         self.canvas.endMove(copy=False)
-        self.setDirty()
+        self.canvas_shape_moved()
 
     def openDirDialog(self, _value=False, dirpath=None):
         if not self.mayContinue():
@@ -1938,8 +1954,8 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def imageList(self):
         lst = []
-        for i in range(self.fileListWidget.count()):
-            item = self.fileListWidget.item(i)
+        for i in range(self.listwidget_filelist.count()):
+            item = self.listwidget_filelist.item(i)
             lst.append(item.text())
         return lst
 
@@ -1967,24 +1983,24 @@ class MainWindow(QtWidgets.QMainWindow):
                 item.setCheckState(Qt.Checked)
             else:
                 item.setCheckState(Qt.Unchecked)
-            self.fileListWidget.addItem(item)
+            self.listwidget_filelist.addItem(item)
 
         if len(self.imageList) > 1:
-            self.actions.openNextImg.setEnabled(True)
-            self.actions.openPrevImg.setEnabled(True)
+            self.struct_actions.openNextImg.setEnabled(True)
+            self.struct_actions.openPrevImg.setEnabled(True)
 
         self.openNextImg()
 
     def importDirImages(self, dirpath, pattern=None, load=True):
-        self.actions.openNextImg.setEnabled(True)
-        self.actions.openPrevImg.setEnabled(True)
+        self.struct_actions.openNextImg.setEnabled(True)
+        self.struct_actions.openPrevImg.setEnabled(True)
 
         if not self.mayContinue() or not dirpath:
             return
 
         self.lastOpenDir = dirpath
         self.filename = None
-        self.fileListWidget.clear()
+        self.listwidget_filelist.clear()
         for filename in self.scanAllImages(dirpath):
             if pattern and pattern not in filename:
                 continue
@@ -2000,7 +2016,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 item.setCheckState(Qt.Checked)
             else:
                 item.setCheckState(Qt.Unchecked)
-            self.fileListWidget.addItem(item)
+            self.listwidget_filelist.addItem(item)
         self.openNextImg(load=load)
 
     def scanAllImages(self, folderPath):
