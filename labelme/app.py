@@ -312,7 +312,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         toggle_keep_prev_mode.setChecked(self._dict_config["keep_prev"])
 
-        createMode = action(
+        createPolygonMode = action(
             self.tr("Create Polygons"),
             lambda: self.toggleDrawMode(False, createMode="polygon"),
             shortcuts["create_polygon"],
@@ -361,7 +361,7 @@ class MainWindow(QtWidgets.QMainWindow):
             enabled=False,
         )
 
-        editMode = action(
+        editPolygonMode = action(
             self.tr("Edit Polygons"),
             self.setEditMode,
             shortcuts["edit_polygon"],
@@ -379,7 +379,7 @@ class MainWindow(QtWidgets.QMainWindow):
             enabled=False,
         )
         copy = action(
-            self.tr("Duplicate Polygons"),
+            self.tr("Copy Polygons"),
             self.copySelectedShape,
             shortcuts["duplicate_polygon"],
             "copy",
@@ -568,8 +568,8 @@ class MainWindow(QtWidgets.QMainWindow):
             undo=undo,
             addPointToEdge=addPointToEdge,
             removePoint=removePoint,
-            createMode=createMode,
-            editMode=editMode,
+            createPolygonMode=createPolygonMode,
+            editMode=editPolygonMode,
             createRectangleMode=createRectangleMode,
             createCircleMode=createCircleMode,
             createLineMode=createLineMode,
@@ -603,13 +603,13 @@ class MainWindow(QtWidgets.QMainWindow):
             ),
             # menu shown at right click이거도 하지만,   Edit Menu에 추가되는 메뉴이기도 함.
             menu_canvas=(
-                createMode,
+                createPolygonMode,
                 createRectangleMode,
                 createCircleMode,
                 createLineMode,
                 createPointMode,
                 createLineStripMode,
-                editMode,
+                editPolygonMode,
                 edit,
                 copy,
                 delete,
@@ -620,13 +620,13 @@ class MainWindow(QtWidgets.QMainWindow):
             ),
             onLoadActive=(
                 close,
-                createMode,
+                createPolygonMode,
                 createRectangleMode,
                 createCircleMode,
                 createLineMode,
                 createPointMode,
                 createLineStripMode,
-                editMode,
+                editPolygonMode,
                 brightnessContrast,
             ),
             onShapesPresent=(saveAs, hideAll, showAll),
@@ -714,8 +714,8 @@ class MainWindow(QtWidgets.QMainWindow):
             save,
             deleteFile,
             None,               # 메뉴 seperator이다
-            createMode,
-            editMode,
+            createPolygonMode,
+            editPolygonMode,
             copy,
             delete,
             undo,
@@ -742,7 +742,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Application state.
         self.image = QtGui.QImage()
         self.imagePath = None
-        self.recentFiles = []
+        self.list_recentFiles = []
         self.maxRecent = 7
         self.otherData = None
         self.zoom_level = 100
@@ -767,16 +767,14 @@ class MainWindow(QtWidgets.QMainWindow):
         # Restore application settings.
         self.settings = QtCore.QSettings("labelme", "labelme")
         # FIXME: QSettings.value can return None on PyQt4
-        self.recentFiles = self.settings.value("recentFiles", []) or []
+        self.list_recentFiles = self.settings.value("recentFiles", []) or []
         size = self.settings.value("window/size", QtCore.QSize(600, 500))
         position = self.settings.value("window/position", QtCore.QPoint(0, 0))
         self.resize(size)
         self.move(position)
         # or simply:
         # self.restoreGeometry(settings['window/geometry']
-        self.restoreState(
-            self.settings.value("window/state", QtCore.QByteArray())
-        )
+        self.restoreState( self.settings.value("window/state", QtCore.QByteArray()) )
 
         # Populate the File menu dynamically.
         self.updateFileMenu()
@@ -829,7 +827,7 @@ class MainWindow(QtWidgets.QMainWindow):
         utils.addActions(self.canvas.menus[0], menu)
         self.struct_head_menus.edit.clear()
         actions = (
-            self.struct_actions.createMode,
+            self.struct_actions.createPolygonMode,
             self.struct_actions.createRectangleMode,
             self.struct_actions.createCircleMode,
             self.struct_actions.createLineMode,
@@ -860,7 +858,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def setClean(self):
         self.dirty = False
         self.struct_actions.save.setEnabled(False)
-        self.struct_actions.createMode.setEnabled(True)
+        self.struct_actions.createPolygonMode.setEnabled(True)
         self.struct_actions.createRectangleMode.setEnabled(True)
         self.struct_actions.createCircleMode.setEnabled(True)
         self.struct_actions.createLineMode.setEnabled(True)
@@ -910,11 +908,11 @@ class MainWindow(QtWidgets.QMainWindow):
         return None
 
     def addRecentFile(self, filename):
-        if filename in self.recentFiles:
-            self.recentFiles.remove(filename)
-        elif len(self.recentFiles) >= self.maxRecent:
-            self.recentFiles.pop()
-        self.recentFiles.insert(0, filename)
+        if filename in self.list_recentFiles:
+            self.list_recentFiles.remove(filename)
+        elif len(self.list_recentFiles) >= self.maxRecent:
+            self.list_recentFiles.pop()
+        self.list_recentFiles.insert(0, filename)
 
     # Callbacks
 
@@ -942,7 +940,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canvas.setEditing(edit)
         self.canvas.createMode = createMode
         if edit:
-            self.struct_actions.createMode.setEnabled(True)
+            self.struct_actions.createPolygonMode.setEnabled(True)
             self.struct_actions.createRectangleMode.setEnabled(True)
             self.struct_actions.createCircleMode.setEnabled(True)
             self.struct_actions.createLineMode.setEnabled(True)
@@ -951,7 +949,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         else:
             if createMode == "polygon":
-                self.struct_actions.createMode.setEnabled(False)
+                self.struct_actions.createPolygonMode.setEnabled(False)
                 self.struct_actions.createRectangleMode.setEnabled(True)
                 self.struct_actions.createCircleMode.setEnabled(True)
                 self.struct_actions.createLineMode.setEnabled(True)
@@ -959,7 +957,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineStripMode.setEnabled(True)
 
             elif createMode == "rectangle":
-                self.struct_actions.createMode.setEnabled(True)
+                self.struct_actions.createPolygonMode.setEnabled(True)
                 self.struct_actions.createRectangleMode.setEnabled(False)
                 self.struct_actions.createCircleMode.setEnabled(True)
                 self.struct_actions.createLineMode.setEnabled(True)
@@ -967,7 +965,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineStripMode.setEnabled(True)
 
             elif createMode == "line":
-                self.struct_actions.createMode.setEnabled(True)
+                self.struct_actions.createPolygonMode.setEnabled(True)
                 self.struct_actions.createRectangleMode.setEnabled(True)
                 self.struct_actions.createCircleMode.setEnabled(True)
                 self.struct_actions.createLineMode.setEnabled(False)
@@ -975,7 +973,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineStripMode.setEnabled(True)
 
             elif createMode == "point":
-                self.struct_actions.createMode.setEnabled(True)
+                self.struct_actions.createPolygonMode.setEnabled(True)
                 self.struct_actions.createRectangleMode.setEnabled(True)
                 self.struct_actions.createCircleMode.setEnabled(True)
                 self.struct_actions.createLineMode.setEnabled(True)
@@ -983,7 +981,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineStripMode.setEnabled(True)
 
             elif createMode == "circle":
-                self.struct_actions.createMode.setEnabled(True)
+                self.struct_actions.createPolygonMode.setEnabled(True)
                 self.struct_actions.createRectangleMode.setEnabled(True)
                 self.struct_actions.createCircleMode.setEnabled(False)
                 self.struct_actions.createLineMode.setEnabled(True)
@@ -991,7 +989,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineStripMode.setEnabled(True)
 
             elif createMode == "linestrip":
-                self.struct_actions.createMode.setEnabled(True)
+                self.struct_actions.createPolygonMode.setEnabled(True)
                 self.struct_actions.createRectangleMode.setEnabled(True)
                 self.struct_actions.createCircleMode.setEnabled(True)
                 self.struct_actions.createLineMode.setEnabled(True)
@@ -1013,12 +1011,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         menu = self.struct_head_menus.recentFiles
         menu.clear()
-        files = [f for f in self.recentFiles if f != current and exists(f)]
+        files = [f for f in self.list_recentFiles if f != current and exists(f)]
         for i, f in enumerate(files):
             icon = utils.newIcon("labels")
-            action = QtWidgets.QAction(
-                icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
-            )
+            action = QtWidgets.QAction( icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self )
             action.triggered.connect(functools.partial(self.loadRecent, f))
             menu.addAction(action)
 
@@ -1540,13 +1536,13 @@ class MainWindow(QtWidgets.QMainWindow):
         brightness, contrast = self.brightnessContrast_values.get(
             self.filename, (None, None)
         )
-        if self._dict_config["keep_prev_brightness"] and self.recentFiles:
+        if self._dict_config["keep_prev_brightness"] and self.list_recentFiles:
             brightness, _ = self.brightnessContrast_values.get(
-                self.recentFiles[0], (None, None)
+                self.list_recentFiles[0], (None, None)
             )
-        if self._dict_config["keep_prev_contrast"] and self.recentFiles:
+        if self._dict_config["keep_prev_contrast"] and self.list_recentFiles:
             _, contrast = self.brightnessContrast_values.get(
-                self.recentFiles[0], (None, None)
+                self.list_recentFiles[0], (None, None)
             )
         if brightness is not None:
             dialog.slider_brightness.setValue(brightness)
@@ -1613,7 +1609,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings.setValue("window/size", self.size())
         self.settings.setValue("window/position", self.pos())
         self.settings.setValue("window/state", self.saveState())
-        self.settings.setValue("recentFiles", self.recentFiles)
+        self.settings.setValue("recentFiles", self.list_recentFiles)
         # ask the use for where to save the labels
         # self.settings.setValue('window/geometry', self.saveGeometry())
 
