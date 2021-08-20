@@ -90,6 +90,72 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.lastOpenDir = None
 
+        ## digit0 ~ 9 까지 radio button 추가 .
+
+        self.digit_selected = -1
+
+        self.layout_hdigit0 = QtWidgets.QHBoxLayout()
+        self.layout_hdigit1 = QtWidgets.QHBoxLayout()
+        self.layout_vdigit = QtWidgets.QVBoxLayout()
+
+        self.widget_vdigit = QtWidgets.QFrame(self)
+        self.widget_vdigit.setFrameStyle(QtWidgets.QFrame.StyledPanel | QtWidgets.QFrame.Raised)
+        self.widget_vdigit.setStyleSheet("background-color: rgb(100, 255, 255);")
+
+        self.widget_digit_h0 = QtWidgets.QWidget(self)
+        self.widget_digit_h1 = QtWidgets.QWidget(self)
+
+        self.widget_vdigit.setLayout(self.layout_vdigit)
+
+        self.layout_vdigit.addWidget(self.widget_digit_h0)
+        self.layout_vdigit.addWidget(self.widget_digit_h1)
+
+        self.widget_digit_h0.setLayout(self.layout_hdigit0)
+        self.widget_digit_h1.setLayout(self.layout_hdigit1)
+
+        self.group_digits = QtWidgets.QButtonGroup(self.widget_vdigit)
+
+        self.digit0 = QtWidgets.QRadioButton("0")
+        self.digit1 = QtWidgets.QRadioButton("1")
+        self.digit2 = QtWidgets.QRadioButton("2")
+        self.digit3 = QtWidgets.QRadioButton("3")
+        self.digit4 = QtWidgets.QRadioButton("4")
+        self.digit5 = QtWidgets.QRadioButton("5")
+        self.digit6 = QtWidgets.QRadioButton("6")
+        self.digit7 = QtWidgets.QRadioButton("7")
+        self.digit8 = QtWidgets.QRadioButton("8")
+        self.digit9 = QtWidgets.QRadioButton("9")
+
+        self.group_digits.addButton(self.digit0)
+        self.group_digits.addButton(self.digit1)
+        self.group_digits.addButton(self.digit2)
+        self.group_digits.addButton(self.digit3)
+        self.group_digits.addButton(self.digit4)
+        self.group_digits.addButton(self.digit5)
+        self.group_digits.addButton(self.digit6)
+        self.group_digits.addButton(self.digit7)
+        self.group_digits.addButton(self.digit8)
+        self.group_digits.addButton(self.digit9)
+
+        self.layout_hdigit0.addWidget(self.digit0)
+        self.layout_hdigit0.addWidget(self.digit1)
+        self.layout_hdigit0.addWidget(self.digit2)
+        self.layout_hdigit0.addWidget(self.digit3)
+        self.layout_hdigit0.addWidget(self.digit4)
+        self.layout_hdigit1.addWidget(self.digit5)
+        self.layout_hdigit1.addWidget(self.digit6)
+        self.layout_hdigit1.addWidget(self.digit7)
+        self.layout_hdigit1.addWidget(self.digit8)
+        self.layout_hdigit1.addWidget(self.digit9)
+
+        self.dockwidget_digits = QtWidgets.QDockWidget(self.tr("Digits"), self)
+        self.dockwidget_digits.setObjectName("Digits")
+        self.dockwidget_digits.setWidget(self.widget_vdigit)
+
+        self.group_digits.buttonClicked[int].connect(self.btnDigitClicked)
+
+
+
         ## flag widget
         self.dockwidget_flag = self.listwidget_flag = None
         self.dockwidget_flag = QtWidgets.QDockWidget(self.tr("Flags"), self)      # QObject.tr은 다중언어를 지원하기 위해서.
@@ -181,7 +247,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(scrollArea)       # 중앙에 scrollArea widget에 있고, 그 안에 canvas widget에 존재한다.
 
         features = QtWidgets.QDockWidget.DockWidgetFeatures()
-        for dock in ["dockwidget_flag", "dockwidget_label", "dockwidget_uniqlabel", "dockwidget_file"]:
+        for dock in ["dockwidget_digits",  "dockwidget_flag", "dockwidget_label", "dockwidget_uniqlabel", "dockwidget_file"]:
             if self._dict_config[dock]["closable"]:
                 features = features | QtWidgets.QDockWidget.DockWidgetClosable
             if self._dict_config[dock]["floatable"]:
@@ -192,6 +258,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self._dict_config[dock]["show"] is False:
                 getattr(self, dock).setVisible(False)
 
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_digits)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_flag)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_uniqlabel)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_label)
@@ -1241,7 +1308,7 @@ class MainWindow(QtWidgets.QMainWindow):
             flag = item.checkState() == Qt.Checked
             flags[key] = flag
         try:
-            imagePath = osp.relpath(self.imagePath, osp.dirname(filename))
+            imagePath = osp.relpath(self.imagePath, osp.dirname(filename))      # 상대경로를 구한다.
             imageData = self.imageData if self._dict_config["store_data"] else None
             if osp.dirname(filename) and not osp.exists(osp.dirname(filename)):
                 os.makedirs(osp.dirname(filename))
@@ -1256,9 +1323,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 flags=flags,
             )
             self.labelFile = lf
-            items = self.listwidget_filelist.findItems(
-                self.imagePath, Qt.MatchExactly
-            )
+            items = self.listwidget_filelist.findItems( self.imagePath, Qt.MatchExactly )
             if len(items) > 0:
                 if len(items) != 1:
                     raise RuntimeError("There are duplicate files.")
@@ -1267,9 +1332,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # self.filename = filename
             return True
         except LabelFileError as e:
-            self.errorMessage(
-                self.tr("Error saving label data"), self.tr("<b>%s</b>") % e
-            )
+            self.errorMessage( self.tr("Error saving label data"), self.tr("<b>%s</b>") % e )
             return False
 
     def copySelectedShape(self):
@@ -1302,7 +1365,7 @@ class MainWindow(QtWidgets.QMainWindow):
     # Callback functions:
 
     def canvas_newShape(self):
-        """Pop-up and give focus to the label editor.
+        """ canvas에서 새로운 shape이 생기면  call된다.
 
         position MUST be in global coordinates.
         """
@@ -1430,9 +1493,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def loadFile(self, filename=None):
         """Load the specified file, or the last opened file if None."""
         # changing fileListWidget loads file
-        if filename in self.imageList and (
-            self.listwidget_filelist.currentRow() != self.imageList.index(filename)
-        ):
+        if filename in self.imageList and ( self.listwidget_filelist.currentRow() != self.imageList.index(filename) ):
             self.listwidget_filelist.setCurrentRow(self.imageList.index(filename))
             self.listwidget_filelist.repaint()
             return
@@ -1454,9 +1515,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.output_dir:
             label_file_without_path = osp.basename(label_file)
             label_file = osp.join(self.output_dir, label_file_without_path)
-        if QtCore.QFile.exists(label_file) and LabelFile.is_label_file(
-            label_file
-        ):
+        if QtCore.QFile.exists(label_file) and LabelFile.is_label_file( label_file ):
             try:
                 self.labelFile = LabelFile(label_file)
             except LabelFileError as e:
@@ -1471,10 +1530,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.status(self.tr("Error reading %s") % label_file)
                 return False
             self.imageData = self.labelFile.imageData
-            self.imagePath = osp.join(
-                osp.dirname(label_file),
-                self.labelFile.imagePath,
-            )
+            self.imagePath = osp.join( osp.dirname(label_file), self.labelFile.imagePath, )
             self.otherData = self.labelFile.otherData
         else:
             self.imageData = LabelFile.load_image_file(filename)
@@ -1524,26 +1580,14 @@ class MainWindow(QtWidgets.QMainWindow):
         # set scroll values
         for orientation in self.scroll_values:
             if self.filename in self.scroll_values[orientation]:
-                self.setScroll(
-                    orientation, self.scroll_values[orientation][self.filename]
-                )
+                self.setScroll( orientation, self.scroll_values[orientation][self.filename] )
         # set brightness constrast values
-        dialog = BrightnessContrastDialog(
-            utils.img_data_to_pil(self.imageData),
-            self.onNewBrightnessContrast,
-            parent=self,
-        )
-        brightness, contrast = self.brightnessContrast_values.get(
-            self.filename, (None, None)
-        )
+        dialog = BrightnessContrastDialog( utils.img_data_to_pil(self.imageData), self.onNewBrightnessContrast, parent=self, )
+        brightness, contrast = self.brightnessContrast_values.get( self.filename, (None, None) )
         if self._dict_config["keep_prev_brightness"] and self.list_recentFiles:
-            brightness, _ = self.brightnessContrast_values.get(
-                self.list_recentFiles[0], (None, None)
-            )
+            brightness, _ = self.brightnessContrast_values.get( self.list_recentFiles[0], (None, None) )
         if self._dict_config["keep_prev_contrast"] and self.list_recentFiles:
-            _, contrast = self.brightnessContrast_values.get(
-                self.list_recentFiles[0], (None, None)
-            )
+            _, contrast = self.brightnessContrast_values.get( self.list_recentFiles[0], (None, None) )
         if brightness is not None:
             dialog.slider_brightness.setValue(brightness)
         if contrast is not None:
@@ -1603,9 +1647,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         if not self.mayContinue():
             event.ignore()
-        self.settings.setValue(
-            "filename", self.filename if self.filename else ""
-        )
+        self.settings.setValue( "filename", self.filename if self.filename else "" )
         self.settings.setValue("window/size", self.size())
         self.settings.setValue("window/position", self.pos())
         self.settings.setValue("window/state", self.saveState())
@@ -1731,10 +1773,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.output_dir = output_dir
 
-        self.statusBar().showMessage(
-            self.tr("%s . Annotations will be saved/loaded in %s")
-            % ("Change Annotations Dir", self.output_dir)
-        )
+        self.statusBar().showMessage( self.tr("%s . Annotations will be saved/loaded in %s") % ("Change Annotations Dir", self.output_dir) )
         self.statusBar().show()
 
         current_filename = self.filename
@@ -1742,9 +1781,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if current_filename in self.imageList:
             # retain currently selected file
-            self.listwidget_filelist.setCurrentRow(
-                self.imageList.index(current_filename)
-            )
+            self.listwidget_filelist.setCurrentRow( self.imageList.index(current_filename) )
             self.listwidget_filelist.repaint()
 
     def saveFile(self, _value=False):
@@ -1766,32 +1803,23 @@ class MainWindow(QtWidgets.QMainWindow):
         caption = self.tr("%s - Choose File") % __appname__
         filters = self.tr("Label files (*%s)") % LabelFile.suffix
         if self.output_dir:
-            dlg = QtWidgets.QFileDialog(
-                self, caption, self.output_dir, filters
-            )
+            dlg = QtWidgets.QFileDialog( self, caption, self.output_dir, filters )
         else:
-            dlg = QtWidgets.QFileDialog(
-                self, caption, self.currentPath(), filters
-            )
+            dlg = QtWidgets.QFileDialog( self, caption, self.currentPath(), filters)
         dlg.setDefaultSuffix(LabelFile.suffix[1:])
         dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
         dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
         dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
         basename = osp.basename(osp.splitext(self.filename)[0])
         if self.output_dir:
-            default_labelfile_name = osp.join(
-                self.output_dir, basename + LabelFile.suffix
-            )
+            default_labelfile_name = osp.join( self.output_dir, basename + LabelFile.suffix )
         else:
-            default_labelfile_name = osp.join(
-                self.currentPath(), basename + LabelFile.suffix
-            )
-        filename = dlg.getSaveFileName(
-            self,
-            self.tr("Choose File"),
-            default_labelfile_name,
-            self.tr("Label files (*%s)") % LabelFile.suffix,
-        )
+            default_labelfile_name = osp.join( self.currentPath(), basename + LabelFile.suffix)
+
+        # default으로  default_labelfile_name 을 사용한다. 그러므로, dlg은 필요하지 않다.
+        ##filename = dlg.getSaveFileName( self, self.tr("Choose File"), default_labelfile_name, self.tr("Label files (*%s)") % LabelFile.suffix,)
+
+        filename = default_labelfile_name
         if isinstance(filename, tuple):
             filename, _ = filename
         return filename
@@ -1841,10 +1869,7 @@ class MainWindow(QtWidgets.QMainWindow):
     # Message Dialogs. #
     def hasLabels(self):
         if self.noShapes():
-            self.errorMessage(
-                "No objects labeled",
-                "You must label at least one object to save the file.",
-            )
+            self.errorMessage( "No objects labeled", "You must label at least one object to save the file.",)
             return False
         return True
 
@@ -1859,9 +1884,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.dirty:
             return True
         mb = QtWidgets.QMessageBox
-        msg = self.tr('Save annotations to "{}" before closing?').format(
-            self.filename
-        )
+        msg = self.tr('Save annotations to "{}" before closing?').format( self.filename)
         answer = mb.question(
             self,
             self.tr("Save annotations?"),
@@ -1878,9 +1901,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return False
 
     def errorMessage(self, title, message):
-        return QtWidgets.QMessageBox.critical(
-            self, title, "<p><b>%s</b></p>%s" % (title, message)
-        )
+        return QtWidgets.QMessageBox.critical( self, title, "<p><b>%s</b></p>%s" % (title, message) )
 
     def currentPath(self):
         return osp.dirname(str(self.filename)) if self.filename else "."
@@ -1900,13 +1921,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def deleteSelectedShape(self):
         yes, no = QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No
-        msg = self.tr(
-            "You are about to permanently delete {} polygons, "
-            "proceed anyway?"
-        ).format(len(self.canvas.selectedShapes))
-        if yes == QtWidgets.QMessageBox.warning(
-            self, self.tr("Attention"), msg, yes | no, yes
-        ):
+        msg = self.tr("You are about to permanently delete {} polygons, " "proceed anyway?" ).format(len(self.canvas.selectedShapes))
+        if yes == QtWidgets.QMessageBox.warning( self, self.tr("Attention"), msg, yes | no, yes ):
             self.remLabels(self.canvas.deleteSelected())
             self.canvas_shape_moved()
             if self.noShapes():
@@ -1929,13 +1945,13 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         defaultOpenDirPath = dirpath if dirpath else "."
+
         if self.lastOpenDir and osp.exists(self.lastOpenDir):
             defaultOpenDirPath = self.lastOpenDir
         else:
-            defaultOpenDirPath = (
-                osp.dirname(self.filename) if self.filename else "."
-            )
+            defaultOpenDirPath = ( osp.dirname(self.filename) if self.filename else "." )
 
+        defaultOpenDirPath = r'D:\proj_gauge\labelme_data\annotation'
         targetDirPath = str(
             QtWidgets.QFileDialog.getExistingDirectory(
                 self,
@@ -2006,9 +2022,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 label_file = osp.join(self.output_dir, label_file_without_path)
             item = QtWidgets.QListWidgetItem(filename)
             item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-            if QtCore.QFile.exists(label_file) and LabelFile.is_label_file(
-                label_file
-            ):
+            if QtCore.QFile.exists(label_file) and LabelFile.is_label_file( label_file):
                 item.setCheckState(Qt.Checked)
             else:
                 item.setCheckState(Qt.Unchecked)
@@ -2029,3 +2043,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     images.append(relativePath)
         images.sort(key=lambda x: x.lower())
         return images
+
+    def btnDigitClicked(self, id):
+        for button in self.group_digits.buttons():
+            if button is self.group_digits.button(id):
+                self.digit_selected = button.text()
+                print(button.text() + " Clicked!")

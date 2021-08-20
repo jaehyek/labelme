@@ -1,7 +1,7 @@
 import base64
 import contextlib
 import io
-import json
+import json, codecs
 import os.path as osp
 
 import PIL.Image
@@ -177,9 +177,7 @@ class LabelFile(object):
     ):
         if imageData is not None:
             imageData = base64.b64encode(imageData).decode("utf-8")
-            imageHeight, imageWidth = self._check_image_height_and_width(
-                imageData, imageHeight, imageWidth
-            )
+            imageHeight, imageWidth = self._check_image_height_and_width(imageData, imageHeight, imageWidth )
         if otherData is None:
             otherData = {}
         if flags is None:
@@ -197,7 +195,7 @@ class LabelFile(object):
             assert key not in data
             data[key] = value
         try:
-            with open(filename, "w") as f:
+            with codecs.open(filename, "w", encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             self.filename = filename
         except Exception as e:

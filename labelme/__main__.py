@@ -36,18 +36,16 @@ def main():
         "--output",
         "-O",
         "-o",
-        default=r'D:\proj_gauge\image_test\digit_class_out_json',
+        default=r'D:\proj_gauge\labelme_data',
         help="output file or directory (if it ends with .json it is "
         "recognized as file, else as directory)",
     )
-    default_config_file = os.path.join(os.path.expanduser("~"), ".labelmerc")
+
     parser.add_argument(
         "--config",
         dest="config",
-        help="config file or yaml-format string (default: {})".format(
-            default_config_file
-        ),
-        default=r'./config/default_config.yaml',
+        help="config file ",
+        default=r'./default_config.json',
     )
     # config for the gui
     parser.add_argument(
@@ -55,7 +53,7 @@ def main():
         dest="store_data",
         action="store_false",
         help="stop storing image data to JSON file",
-        default=argparse.SUPPRESS,
+        default=False,
     )
     parser.add_argument(
         "--autosave",
@@ -144,8 +142,8 @@ def main():
     reset_config = config_from_args.pop("reset_config")
     filename = config_from_args.pop("filename")
     output = config_from_args.pop("output")
-    config_file_or_yaml = config_from_args.pop("config")
-    dict_config = get_config(config_file_or_yaml, config_from_args)
+    config_file_or_json = config_from_args.pop("config")
+    dict_config = get_config(config_file_or_json, config_from_args)
 
     if not dict_config["labels"] and dict_config["validate_label"]:
         logger.error(

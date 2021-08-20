@@ -30,6 +30,11 @@ shape:
   hvertex_fill_color: [255, 255, 255, 255]
 
 # main ,  Hangul is not allowed .
+dockwidget_digits:
+  show: true
+  closable: true
+  movable: true
+  floatable: true
 dockwidget_flag:
   show: true
   closable: true
