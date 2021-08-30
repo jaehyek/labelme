@@ -1951,7 +1951,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             defaultOpenDirPath = ( osp.dirname(self.filename) if self.filename else "." )
 
-        defaultOpenDirPath = r'D:\proj_gauge\labelme_data\annotation'
         targetDirPath = str(
             QtWidgets.QFileDialog.getExistingDirectory(
                 self,
