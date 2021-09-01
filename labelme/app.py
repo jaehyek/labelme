@@ -1885,13 +1885,14 @@ class MainWindow(QtWidgets.QMainWindow):
             return True
         mb = QtWidgets.QMessageBox
         msg = self.tr('Save annotations to "{}" before closing?').format( self.filename)
-        answer = mb.question(
-            self,
-            self.tr("Save annotations?"),
-            msg,
-            mb.Save | mb.Discard | mb.Cancel,
-            mb.Save,
-        )
+        # answer = mb.question(
+        #     self,
+        #     self.tr("Save annotations?"),
+        #     msg,
+        #     mb.Save | mb.Discard | mb.Cancel,
+        #     mb.Save,
+        # )
+        answer = mb.Save
         if answer == mb.Discard:
             return True
         elif answer == mb.Save:

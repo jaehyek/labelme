@@ -36,7 +36,7 @@ def main():
         "--output",
         "-O",
         "-o",
-        default=r'D:\proj_gauge\labelme_data\annotation',
+        # default=r'',
         help="output file or directory (if it ends with .json it is "
         "recognized as file, else as directory)",
     )
