@@ -92,67 +92,67 @@ class MainWindow(QtWidgets.QMainWindow):
 
         ## digit0 ~ 9 까지 radio button 추가 .
 
-        self.digit_selected = -1
-
-        self.layout_hdigit0 = QtWidgets.QHBoxLayout()
-        self.layout_hdigit1 = QtWidgets.QHBoxLayout()
-        self.layout_vdigit = QtWidgets.QVBoxLayout()
-
-        self.widget_vdigit = QtWidgets.QFrame(self)
-        self.widget_vdigit.setFrameStyle(QtWidgets.QFrame.StyledPanel | QtWidgets.QFrame.Raised)
-        self.widget_vdigit.setStyleSheet("background-color: rgb(100, 255, 255);")
-
-        self.widget_digit_h0 = QtWidgets.QWidget(self)
-        self.widget_digit_h1 = QtWidgets.QWidget(self)
-
-        self.widget_vdigit.setLayout(self.layout_vdigit)
-
-        self.layout_vdigit.addWidget(self.widget_digit_h0)
-        self.layout_vdigit.addWidget(self.widget_digit_h1)
-
-        self.widget_digit_h0.setLayout(self.layout_hdigit0)
-        self.widget_digit_h1.setLayout(self.layout_hdigit1)
-
-        self.group_digits = QtWidgets.QButtonGroup(self.widget_vdigit)
-
-        self.digit0 = QtWidgets.QRadioButton("0")
-        self.digit1 = QtWidgets.QRadioButton("1")
-        self.digit2 = QtWidgets.QRadioButton("2")
-        self.digit3 = QtWidgets.QRadioButton("3")
-        self.digit4 = QtWidgets.QRadioButton("4")
-        self.digit5 = QtWidgets.QRadioButton("5")
-        self.digit6 = QtWidgets.QRadioButton("6")
-        self.digit7 = QtWidgets.QRadioButton("7")
-        self.digit8 = QtWidgets.QRadioButton("8")
-        self.digit9 = QtWidgets.QRadioButton("9")
-
-        self.group_digits.addButton(self.digit0)
-        self.group_digits.addButton(self.digit1)
-        self.group_digits.addButton(self.digit2)
-        self.group_digits.addButton(self.digit3)
-        self.group_digits.addButton(self.digit4)
-        self.group_digits.addButton(self.digit5)
-        self.group_digits.addButton(self.digit6)
-        self.group_digits.addButton(self.digit7)
-        self.group_digits.addButton(self.digit8)
-        self.group_digits.addButton(self.digit9)
-
-        self.layout_hdigit0.addWidget(self.digit0)
-        self.layout_hdigit0.addWidget(self.digit1)
-        self.layout_hdigit0.addWidget(self.digit2)
-        self.layout_hdigit0.addWidget(self.digit3)
-        self.layout_hdigit0.addWidget(self.digit4)
-        self.layout_hdigit1.addWidget(self.digit5)
-        self.layout_hdigit1.addWidget(self.digit6)
-        self.layout_hdigit1.addWidget(self.digit7)
-        self.layout_hdigit1.addWidget(self.digit8)
-        self.layout_hdigit1.addWidget(self.digit9)
-
-        self.dockwidget_digits = QtWidgets.QDockWidget(self.tr("Digits"), self)
-        self.dockwidget_digits.setObjectName("Digits")
-        self.dockwidget_digits.setWidget(self.widget_vdigit)
-
-        self.group_digits.buttonClicked[int].connect(self.btnDigitClicked)
+        # self.digit_selected = -1
+        #
+        # self.layout_hdigit0 = QtWidgets.QHBoxLayout()
+        # self.layout_hdigit1 = QtWidgets.QHBoxLayout()
+        # self.layout_vdigit = QtWidgets.QVBoxLayout()
+        #
+        # self.widget_vdigit = QtWidgets.QFrame(self)
+        # self.widget_vdigit.setFrameStyle(QtWidgets.QFrame.StyledPanel | QtWidgets.QFrame.Raised)
+        # self.widget_vdigit.setStyleSheet("background-color: rgb(100, 255, 255);")
+        #
+        # self.widget_digit_h0 = QtWidgets.QWidget(self)
+        # self.widget_digit_h1 = QtWidgets.QWidget(self)
+        #
+        # self.widget_vdigit.setLayout(self.layout_vdigit)
+        #
+        # self.layout_vdigit.addWidget(self.widget_digit_h0)
+        # self.layout_vdigit.addWidget(self.widget_digit_h1)
+        #
+        # self.widget_digit_h0.setLayout(self.layout_hdigit0)
+        # self.widget_digit_h1.setLayout(self.layout_hdigit1)
+        #
+        # self.group_digits = QtWidgets.QButtonGroup(self.widget_vdigit)
+        #
+        # self.digit0 = QtWidgets.QRadioButton("0")
+        # self.digit1 = QtWidgets.QRadioButton("1")
+        # self.digit2 = QtWidgets.QRadioButton("2")
+        # self.digit3 = QtWidgets.QRadioButton("3")
+        # self.digit4 = QtWidgets.QRadioButton("4")
+        # self.digit5 = QtWidgets.QRadioButton("5")
+        # self.digit6 = QtWidgets.QRadioButton("6")
+        # self.digit7 = QtWidgets.QRadioButton("7")
+        # self.digit8 = QtWidgets.QRadioButton("8")
+        # self.digit9 = QtWidgets.QRadioButton("9")
+        #
+        # self.group_digits.addButton(self.digit0)
+        # self.group_digits.addButton(self.digit1)
+        # self.group_digits.addButton(self.digit2)
+        # self.group_digits.addButton(self.digit3)
+        # self.group_digits.addButton(self.digit4)
+        # self.group_digits.addButton(self.digit5)
+        # self.group_digits.addButton(self.digit6)
+        # self.group_digits.addButton(self.digit7)
+        # self.group_digits.addButton(self.digit8)
+        # self.group_digits.addButton(self.digit9)
+        #
+        # self.layout_hdigit0.addWidget(self.digit0)
+        # self.layout_hdigit0.addWidget(self.digit1)
+        # self.layout_hdigit0.addWidget(self.digit2)
+        # self.layout_hdigit0.addWidget(self.digit3)
+        # self.layout_hdigit0.addWidget(self.digit4)
+        # self.layout_hdigit1.addWidget(self.digit5)
+        # self.layout_hdigit1.addWidget(self.digit6)
+        # self.layout_hdigit1.addWidget(self.digit7)
+        # self.layout_hdigit1.addWidget(self.digit8)
+        # self.layout_hdigit1.addWidget(self.digit9)
+        #
+        # self.dockwidget_digits = QtWidgets.QDockWidget(self.tr("Digits"), self)
+        # self.dockwidget_digits.setObjectName("Digits")
+        # self.dockwidget_digits.setWidget(self.widget_vdigit)
+        #
+        # self.group_digits.buttonClicked[int].connect(self.btnDigitClicked)
 
 
 
@@ -247,7 +247,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(scrollArea)       # 중앙에 scrollArea widget에 있고, 그 안에 canvas widget에 존재한다.
 
         features = QtWidgets.QDockWidget.DockWidgetFeatures()
-        for dock in ["dockwidget_digits",  "dockwidget_flag", "dockwidget_label", "dockwidget_uniqlabel", "dockwidget_file"]:
+        # for dock in ["dockwidget_digits",  "dockwidget_flag", "dockwidget_label", "dockwidget_uniqlabel", "dockwidget_file"]:
+        for dock in [ "dockwidget_flag", "dockwidget_label", "dockwidget_uniqlabel", "dockwidget_file"]:
             if self._dict_config[dock]["closable"]:
                 features = features | QtWidgets.QDockWidget.DockWidgetClosable
             if self._dict_config[dock]["floatable"]:
@@ -258,7 +259,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self._dict_config[dock]["show"] is False:
                 getattr(self, dock).setVisible(False)
 
-        self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_digits)
+        # self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_digits)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_flag)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_uniqlabel)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget_label)
