@@ -464,13 +464,13 @@ class Canvas(QtWidgets.QWidget):
         index, shape = self.hVertex, self.hShape
         point = shape[index]
         if self.outOfPixmap(pos):
-            pos = self.intersectionPoint(point, pos)
+            pos = self.intersectionPoint(point, pos)        # bitmap의 bound을 넘엇어면,  경계지점의 point을 return한다.
         shape.moveVertexBy(index, pos - point)
 
     def boundedMoveShapes(self, shapes, pos):
         if self.outOfPixmap(pos):
             return False  # No need to move
-        o1 = pos + self.offsets[0]
+        o1 = pos + self.offsets[0]                  # PyQt5.QtCore.QPointF type
         if self.outOfPixmap(o1):
             pos -= QtCore.QPoint(min(0, o1.x()), min(0, o1.y()))
         o2 = pos + self.offsets[1]
@@ -534,6 +534,22 @@ class Canvas(QtWidgets.QWidget):
         if not self.boundedMoveShapes(shapes, point - offset):
             self.boundedMoveShapes(shapes, point + offset)
 
+    def rotateShape(self, degree):
+        if self.selectedShapes:
+            for shape in self.selectedShapes :
+                shape.rotate_shape(degree)
+
+            self.update()
+            self.shapeMoved.emit()
+
+    def scaleShape(self, scale_f):
+        if self.selectedShapes:
+            for shape in self.selectedShapes :
+                shape.scale_shape(scale_f)
+
+            self.update()
+            self.shapeMoved.emit()
+
     def paintEvent(self, event):
         if not self.pixmap:
             return super(Canvas, self).paintEvent(event)
@@ -586,7 +602,7 @@ class Canvas(QtWidgets.QWidget):
         y = (ah - h) / (2 * s) if ah > h else 0
         return QtCore.QPoint(x, y)
 
-    def outOfPixmap(self, p):
+    def outOfPixmap(self, p):           # pixmap내부에 있으면, False, 외부에 있으면 True
         w, h = self.pixmap.width(), self.pixmap.height()
         return not (0 <= p.x() <= w - 1 and 0 <= p.y() <= h - 1)
 

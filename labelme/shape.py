@@ -5,6 +5,7 @@ from qtpy import QtCore
 from qtpy import QtGui
 
 import labelme.utils
+import numpy as np
 
 
 # TODO(unknown):
@@ -291,3 +292,29 @@ class Shape(object):
 
     def __setitem__(self, key, value):
         self.points[key] = value
+
+    def rotate_shape(self, degree):
+        np_points = np.array([(p.x(), p.y()) for p in self.points])
+        np_max = np.max(np_points, axis=0)
+        np_min = np.min(np_points, axis=0)
+        np_center = (np_min + np_max) / 2
+        np_points -= np_center
+
+        theta = np.deg2rad(degree)
+        c, s = np.cos(theta), np.sin(theta)
+        R = np.array(((c, -s), (s, c)))
+        np_points = np.array([ np.dot(R, point) for point in np_points ])
+        np_points += np_center
+        self.points = [ QtCore.QPointF(point[0], point[1]) for point in np_points]
+
+    def scale_shape(self, scale_f):
+        np_points = np.array([(p.x(), p.y()) for p in self.points])
+        np_max = np.max(np_points, axis=0)
+        np_min = np.min(np_points, axis=0)
+        np_center = (np_min + np_max) / 2
+        np_points -= np_center
+
+        np_points *= scale_f
+        np_points += np_center
+        self.points = [ QtCore.QPointF(point[0], point[1]) for point in np_points]
+

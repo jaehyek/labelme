@@ -574,6 +574,47 @@ class MainWindow(QtWidgets.QMainWindow):
             "Adjust brightness and contrast",
             enabled=False,
         )
+        #############################################################################################################
+        # add a scale, rotate function
+
+        rotate_right = action(
+            "Rotate right",
+            self.shape_rotate_right,
+            None,
+            "rotate right",
+            "rotate shape right",
+            enabled=True,
+        )
+
+        rotate_left = action(
+            "Rotate left",
+            self.shape_rotate_left,
+            None,
+            "rotate left",
+            "rotate shape left",
+            enabled=True,
+        )
+
+        scale_up = action(
+            "scale_up",
+            self.shape_scale_up,
+            None,
+            "scale_up",
+            "scale shape up",
+            enabled=True,
+        )
+
+        scale_down = action(
+            "scale_down",
+            self.shape_scale_down,
+            None,
+            "scale_down",
+            "scale shape down",
+            enabled=True,
+        )
+
+
+        #############################################################################################################
         # Group zoom controls into a list for easier toggling.
         zoomActions = (
             self.zoomWidget,
@@ -654,6 +695,10 @@ class MainWindow(QtWidgets.QMainWindow):
             zoomActions=zoomActions,
             openNextImg=openNextImg,
             openPrevImg=openPrevImg,
+            rotate_right=rotate_right,
+            rotate_left=rotate_left,
+            scale_up=scale_up,
+            scale_down=scale_down,
             fileMenuActions=(open_, opendir, save, saveAs, close, quit),
             tool=(),       # 왼쪽 toolbar을 만들 때, 필요한 action을 만든다.
             # Edit menu 밑에  추가되는 메뉴. 아래에 있는  menu 다음에  editMenu가 추가적으로 붙는다.
@@ -780,17 +825,22 @@ class MainWindow(QtWidgets.QMainWindow):
             openNextImg,
             openPrevImg,
             save,
-            deleteFile,
+            # deleteFile,
             None,               # 메뉴 seperator이다
             createPolygonMode,
             editPolygonMode,
             copy,
-            delete,
+            # delete,
             undo,
-            brightnessContrast,
+            # brightnessContrast,
             None,
             zoom,
             fitWidth,
+            None,
+            rotate_right,
+            rotate_left,
+            scale_up,
+            scale_down
         )
 
         #######################################################################################################
@@ -1181,6 +1231,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.struct_actions.delete.setEnabled(n_selected)
         self.struct_actions.copy.setEnabled(n_selected)
         self.struct_actions.edit.setEnabled(n_selected == 1)
+
+        self.struct_actions.rotate_right.setEnabled(n_selected)
+        self.struct_actions.rotate_left.setEnabled(n_selected)
+        self.struct_actions.scale_up.setEnabled(n_selected)
+        self.struct_actions.scale_down.setEnabled(n_selected)
 
     def addLabel(self, shape):
         if shape.group_id is None:
@@ -1825,6 +1880,36 @@ class MainWindow(QtWidgets.QMainWindow):
             filename, _ = filename
         return filename
 
+    def shape_rotate_right(self):
+        degree = 10
+        if QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier :
+            degree = 1
+
+        self.canvas.rotateShape(degree)
+
+
+    def shape_rotate_left(self):
+        degree = -10
+        if QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier :
+            degree = -1
+
+        self.canvas.rotateShape(degree)
+
+    def shape_scale_up(self):
+        scale_f = 1.1
+        if QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier :
+            scale_f = -1.02
+
+        self.canvas.scaleShape(scale_f)
+
+    def shape_scale_down(self):
+        scale_f = 0.9
+        if QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier :
+            scale_f = 0.98
+
+        self.canvas.scaleShape(scale_f)
+
+
     def _saveFile(self, filename):
         if filename and self.saveLabels(filename):
             self.addRecentFile(filename)
@@ -1953,6 +2038,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             defaultOpenDirPath = ( osp.dirname(self.filename) if self.filename else "." )
 
+        defaultOpenDirPath = r'D:\proj_pill\pill_shape'
         targetDirPath = str(
             QtWidgets.QFileDialog.getExistingDirectory(
                 self,
