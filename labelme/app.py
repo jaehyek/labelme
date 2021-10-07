@@ -2038,7 +2038,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             defaultOpenDirPath = ( osp.dirname(self.filename) if self.filename else "." )
 
-        defaultOpenDirPath = r'D:\proj_pill\pill_shape'
+        # defaultOpenDirPath = r'D:\proj_pill\pill_shape'
         targetDirPath = str(
             QtWidgets.QFileDialog.getExistingDirectory(
                 self,
