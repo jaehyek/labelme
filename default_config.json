@@ -141,6 +141,8 @@
         ],
         "add_point_to_edge": "Ctrl+Shift+P",
         "edit_label": "Ctrl+E",
-        "toggle_keep_prev_mode": "Ctrl+P"
+        "toggle_keep_prev_mode": "Ctrl+P",
+        "copy_shape": "Ctrl+C",
+        "paste_shape": "Ctrl+V"
     }
 }

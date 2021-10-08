@@ -613,6 +613,24 @@ class MainWindow(QtWidgets.QMainWindow):
             enabled=True,
         )
 
+        copy_shape = action(
+            "copy shape",
+            self.copy_shape,
+            shortcuts["copy_shape"],
+            None,
+            "scale shape down",
+            enabled=True,
+        )
+
+        paste_shape = action(
+            "paste shape",
+            self.paste_shape,
+            shortcuts["paste_shape"],
+            None,
+            "paste shape",
+            enabled=True,
+        )
+
 
         #############################################################################################################
         # Group zoom controls into a list for easier toggling.
@@ -699,6 +717,8 @@ class MainWindow(QtWidgets.QMainWindow):
             rotate_left=rotate_left,
             scale_up=scale_up,
             scale_down=scale_down,
+            copy_shape=copy_shape,
+            paste_shape=paste_shape,
             fileMenuActions=(open_, opendir, save, saveAs, close, quit),
             tool=(),       # 왼쪽 toolbar을 만들 때, 필요한 action을 만든다.
             # Edit menu 밑에  추가되는 메뉴. 아래에 있는  menu 다음에  editMenu가 추가적으로 붙는다.
@@ -713,6 +733,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 addPointToEdge,
                 None,
                 toggle_keep_prev_mode,
+                copy_shape,
+                paste_shape,
             ),
             # menu shown at right click이거도 하지만,   Edit Menu에 추가되는 메뉴이기도 함.
             menu_canvas=(
@@ -730,6 +752,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 undoLastPoint,
                 addPointToEdge,
                 removePoint,
+                copy_shape,
+                paste_shape,
             ),
             onLoadActive=(
                 close,
@@ -1236,6 +1260,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.struct_actions.rotate_left.setEnabled(n_selected)
         self.struct_actions.scale_up.setEnabled(n_selected)
         self.struct_actions.scale_down.setEnabled(n_selected)
+        self.struct_actions.copy_shape.setEnabled(n_selected)
+        self.struct_actions.paste_shape.setEnabled(n_selected)
 
     def addLabel(self, shape):
         if shape.group_id is None:
@@ -1655,7 +1681,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addRecentFile(self.filename)
         self.toggleActions(True)
         self.canvas.setFocus()
-        self.status(self.tr("Loaded %s") % osp.basename(str(filename)))
+        currIndex = self.imageList.index(self.filename)
+
+        self.status(self.tr("Loaded %s : %d/%d") % (osp.basename(str(filename)), currIndex, len(self.imageList) ))
         return True
 
     def resizeEvent(self, event):
@@ -1908,6 +1936,22 @@ class MainWindow(QtWidgets.QMainWindow):
             scale_f = 0.98
 
         self.canvas.scaleShape(scale_f)
+
+    def copy_shape(self):
+        self.copied_shapes = self.canvas.copySelectedShapes(copy_only=True)
+        if len(self.copied_shapes) > 0 :
+            self.status('shapes was copied')
+        else:
+            self.status('No selection, Not copied')
+
+    def paste_shape(self):
+        if  hasattr(self, 'copied_shapes') and   len(self.copied_shapes) > 0:
+            self.listwidget_label.clearSelection()
+            for shape in self.copied_shapes:
+                self.addLabel(shape)
+            self.canvas.loadShapes(self.copied_shapes, replace=False)
+            self.canvas_shape_moved()
+            self.status('Shape was pasted.')
 
 
     def _saveFile(self, filename):

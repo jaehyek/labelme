@@ -517,8 +517,10 @@ class Canvas(QtWidgets.QWidget):
         self.storeShapes()
         self.update()
 
-    def copySelectedShapes(self):
+    def copySelectedShapes(self, copy_only=False):
         if self.selectedShapes:
+            if copy_only == True:
+                return [s.copy() for s in self.selectedShapes]
             self.selectedShapesCopy = [s.copy() for s in self.selectedShapes]
             self.boundedShiftShapes(self.selectedShapesCopy)
             self.endMove(copy=True)
