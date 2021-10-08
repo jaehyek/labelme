@@ -581,7 +581,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "Rotate right",
             self.shape_rotate_right,
             None,
-            "rotate right",
+            "rotate-right",
             "rotate shape right",
             enabled=True,
         )
@@ -590,25 +590,25 @@ class MainWindow(QtWidgets.QMainWindow):
             "Rotate left",
             self.shape_rotate_left,
             None,
-            "rotate left",
+            "rotate-left",
             "rotate shape left",
             enabled=True,
         )
 
         scale_up = action(
-            "scale_up",
+            "scale up",
             self.shape_scale_up,
             None,
-            "scale_up",
+            "scale-up",
             "scale shape up",
             enabled=True,
         )
 
         scale_down = action(
-            "scale_down",
+            "scale down",
             self.shape_scale_down,
             None,
-            "scale_down",
+            "scale-down",
             "scale shape down",
             enabled=True,
         )
