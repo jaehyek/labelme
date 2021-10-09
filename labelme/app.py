@@ -631,21 +631,21 @@ class MainWindow(QtWidgets.QMainWindow):
             enabled=True,
         )
 
-        extend_long = action(
+        expand_long = action(
             "extend long",
-            self.extend_long,
+            self.expand_long,
             None,
-            None,
+            'expand-long',
             "extend long",
             enabled=True,
         )
 
-        extend_short = action(
-            "extend short",
-            self.extend_short,
+        expand_short = action(
+            "expand short",
+            self.expand_short,
             None,
-            None,
-            "extend short",
+            'expand-short',
+            "expand short",
             enabled=True,
         )
 
@@ -737,8 +737,8 @@ class MainWindow(QtWidgets.QMainWindow):
             scale_down=scale_down,
             copy_shape=copy_shape,
             paste_shape=paste_shape,
-            extend_long=extend_long,
-            extend_short=extend_short,
+            expand_long=expand_long,
+            expand_short=expand_short,
             fileMenuActions=(open_, opendir, save, saveAs, close, quit),
             tool=(),       # 왼쪽 toolbar을 만들 때, 필요한 action을 만든다.
             # Edit menu 밑에  추가되는 메뉴. 아래에 있는  menu 다음에  editMenu가 추가적으로 붙는다.
@@ -885,8 +885,8 @@ class MainWindow(QtWidgets.QMainWindow):
             rotate_left,
             scale_up,
             scale_down,
-            extend_long,
-            extend_short,
+            expand_long,
+            expand_short,
         )
 
         #######################################################################################################
@@ -1028,6 +1028,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.struct_actions.createLineMode.setEnabled(True)
         self.struct_actions.createPointMode.setEnabled(True)
         self.struct_actions.createLineStripMode.setEnabled(True)
+        self.struct_actions.expand_long.setEnabled(True)
+        self.struct_actions.expand_short.setEnabled(True)
         title = __appname__
         if self.filename is not None:
             title = "{} - {}".format(title, self.filename)
@@ -1110,6 +1112,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.struct_actions.createLineMode.setEnabled(True)
             self.struct_actions.createPointMode.setEnabled(True)
             self.struct_actions.createLineStripMode.setEnabled(True)
+            self.struct_actions.expand_long.setEnabled(True)
+            self.struct_actions.expand_short.setEnabled(True)
 
         else:
             if createMode == "polygon":
@@ -1119,6 +1123,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineMode.setEnabled(True)
                 self.struct_actions.createPointMode.setEnabled(True)
                 self.struct_actions.createLineStripMode.setEnabled(True)
+                self.struct_actions.expand_long.setEnabled(True)
+                self.struct_actions.expand_short.setEnabled(True)
 
             elif createMode == "rectangle":
                 self.struct_actions.createPolygonMode.setEnabled(True)
@@ -1127,6 +1133,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineMode.setEnabled(True)
                 self.struct_actions.createPointMode.setEnabled(True)
                 self.struct_actions.createLineStripMode.setEnabled(True)
+                self.struct_actions.expand_long.setEnabled(True)
+                self.struct_actions.expand_short.setEnabled(True)
 
             elif createMode == "line":
                 self.struct_actions.createPolygonMode.setEnabled(True)
@@ -1135,6 +1143,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineMode.setEnabled(False)
                 self.struct_actions.createPointMode.setEnabled(True)
                 self.struct_actions.createLineStripMode.setEnabled(True)
+                self.struct_actions.expand_long.setEnabled(True)
+                self.struct_actions.expand_short.setEnabled(True)
 
             elif createMode == "point":
                 self.struct_actions.createPolygonMode.setEnabled(True)
@@ -1143,6 +1153,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineMode.setEnabled(True)
                 self.struct_actions.createPointMode.setEnabled(False)
                 self.struct_actions.createLineStripMode.setEnabled(True)
+                self.struct_actions.expand_long.setEnabled(True)
+                self.struct_actions.expand_short.setEnabled(True)
 
             elif createMode == "circle":
                 self.struct_actions.createPolygonMode.setEnabled(True)
@@ -1151,6 +1163,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineMode.setEnabled(True)
                 self.struct_actions.createPointMode.setEnabled(True)
                 self.struct_actions.createLineStripMode.setEnabled(True)
+                self.struct_actions.expand_long.setEnabled(True)
+                self.struct_actions.expand_short.setEnabled(True)
 
             elif createMode == "linestrip":
                 self.struct_actions.createPolygonMode.setEnabled(True)
@@ -1159,6 +1173,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.struct_actions.createLineMode.setEnabled(True)
                 self.struct_actions.createPointMode.setEnabled(True)
                 self.struct_actions.createLineStripMode.setEnabled(False)
+                self.struct_actions.expand_long.setEnabled(True)
+                self.struct_actions.expand_short.setEnabled(True)
 
             else:
                 raise ValueError("Unsupported createMode: %s" % createMode)
@@ -1284,8 +1300,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.struct_actions.scale_down.setEnabled(n_selected)
         self.struct_actions.copy_shape.setEnabled(n_selected)
         self.struct_actions.paste_shape.setEnabled(n_selected)
-        self.struct_actions.extend_long.setEnabled(n_selected)
-        self.struct_actions.extend_short.setEnabled(n_selected)
+        self.struct_actions.expand_long.setEnabled(n_selected)
+        self.struct_actions.expand_short.setEnabled(n_selected)
 
     def addLabel(self, shape):
         if shape.group_id is None:
@@ -1977,19 +1993,27 @@ class MainWindow(QtWidgets.QMainWindow):
             self.canvas_shape_moved()
             self.status('Shape was pasted.')
 
-    def extend_long(self):
+    def expand_long(self):
         scale_f = 1.1
-        if QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier :
-            scale_f = 1.02
+        if QtWidgets.QApplication.keyboardModifiers() == Qt.AltModifier:
+            scale_f = 0.98
+        elif QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            scale_f = 0.9
+        elif QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier:
+            scale_f = 1.01
 
-        self.canvas.extend_eigen(scale_f, eigen_vector_sel=0)
+        self.canvas.expand_eigen(scale_f, eigen_vector_sel=0)
 
-    def extend_short(self):
+    def expand_short(self):
         scale_f = 1.1
-        if QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier:
-            scale_f = 1.02
+        if QtWidgets.QApplication.keyboardModifiers() == Qt.AltModifier:
+            scale_f = 0.98
+        elif QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            scale_f = 0.9
+        elif QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier:
+            scale_f = 1.01
 
-        self.canvas.extend_eigen(scale_f, eigen_vector_sel=1)
+        self.canvas.expand_eigen(scale_f, eigen_vector_sel=1)
 
 
     def _saveFile(self, filename):

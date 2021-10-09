@@ -552,10 +552,10 @@ class Canvas(QtWidgets.QWidget):
             self.update()
             self.shapeMoved.emit()
 
-    def extend_eigen(self, scale_f, eigen_vector_sel=0):
+    def expand_eigen(self, scale_f, eigen_vector_sel=0):
         if self.selectedShapes:
             for shape in self.selectedShapes :
-                shape.extend_eigen(scale_f, eigen_vector_sel)
+                shape.expand_eigen(scale_f, eigen_vector_sel)
 
             self.update()
             self.shapeMoved.emit()

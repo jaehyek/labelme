@@ -318,7 +318,7 @@ class Shape(object):
         np_points += np_center
         self.points = [ QtCore.QPointF(point[0], point[1]) for point in np_points]
 
-    def extend_eigen(self, scale_f, eigen_vector_sel):
+    def expand_eigen(self, scale_f, eigen_vector_sel):
         np_points = np.array([(p.x(), p.y()) for p in self.points])
         np_max = np.max(np_points, axis=0)
         np_min = np.min(np_points, axis=0)
