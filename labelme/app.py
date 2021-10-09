@@ -631,6 +631,24 @@ class MainWindow(QtWidgets.QMainWindow):
             enabled=True,
         )
 
+        extend_long = action(
+            "extend long",
+            self.extend_long,
+            None,
+            None,
+            "extend long",
+            enabled=True,
+        )
+
+        extend_short = action(
+            "extend short",
+            self.extend_short,
+            None,
+            None,
+            "extend short",
+            enabled=True,
+        )
+
 
         #############################################################################################################
         # Group zoom controls into a list for easier toggling.
@@ -719,6 +737,8 @@ class MainWindow(QtWidgets.QMainWindow):
             scale_down=scale_down,
             copy_shape=copy_shape,
             paste_shape=paste_shape,
+            extend_long=extend_long,
+            extend_short=extend_short,
             fileMenuActions=(open_, opendir, save, saveAs, close, quit),
             tool=(),       # 왼쪽 toolbar을 만들 때, 필요한 action을 만든다.
             # Edit menu 밑에  추가되는 메뉴. 아래에 있는  menu 다음에  editMenu가 추가적으로 붙는다.
@@ -844,11 +864,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toolbar = self.make_toolbar("Tools")      # 화면의 왼쪽에 toolbar을 만든다
         # Menu buttons on Left, 화면의 왼쪽 toolbar에 존재하는 menu들 . self.populateModeActions()에서  수행된다.
         self.struct_actions.menu_toolbar = (
-            open_,
+            # open_,
             opendir,
             openNextImg,
             openPrevImg,
-            save,
+            # save,
             # deleteFile,
             None,               # 메뉴 seperator이다
             createPolygonMode,
@@ -864,7 +884,9 @@ class MainWindow(QtWidgets.QMainWindow):
             rotate_right,
             rotate_left,
             scale_up,
-            scale_down
+            scale_down,
+            extend_long,
+            extend_short,
         )
 
         #######################################################################################################
@@ -1262,6 +1284,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.struct_actions.scale_down.setEnabled(n_selected)
         self.struct_actions.copy_shape.setEnabled(n_selected)
         self.struct_actions.paste_shape.setEnabled(n_selected)
+        self.struct_actions.extend_long.setEnabled(n_selected)
+        self.struct_actions.extend_short.setEnabled(n_selected)
 
     def addLabel(self, shape):
         if shape.group_id is None:
@@ -1952,6 +1976,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self.canvas.loadShapes(self.copied_shapes, replace=False)
             self.canvas_shape_moved()
             self.status('Shape was pasted.')
+
+    def extend_long(self):
+        scale_f = 1.1
+        if QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier :
+            scale_f = 1.02
+
+        self.canvas.extend_eigen(scale_f, eigen_vector_sel=0)
+
+    def extend_short(self):
+        scale_f = 1.1
+        if QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier:
+            scale_f = 1.02
+
+        self.canvas.extend_eigen(scale_f, eigen_vector_sel=1)
 
 
     def _saveFile(self, filename):

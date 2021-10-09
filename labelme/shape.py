@@ -318,3 +318,34 @@ class Shape(object):
         np_points += np_center
         self.points = [ QtCore.QPointF(point[0], point[1]) for point in np_points]
 
+    def extend_eigen(self, scale_f, eigen_vector_sel):
+        np_points = np.array([(p.x(), p.y()) for p in self.points])
+        np_max = np.max(np_points, axis=0)
+        np_min = np.min(np_points, axis=0)
+        np_center = (np_min + np_max) / 2
+        np_points -= np_center
+
+        w, v = np.linalg.eig( np.cov(np_points.T))
+        eig_vector = v.T[eigen_vector_sel ]
+        mag = np.sqrt(eig_vector.dot(eig_vector))
+        theta = np.arcsin( eig_vector[1] / mag )
+
+        # eig_vector1 = v.T[eigen_vector_sel-1]
+        # mag1 = np.sqrt(eig_vector1.dot(eig_vector1))
+        # theta1 = np.arcsin(eig_vector1[1] / mag1)
+        # print(f'main vector angle is { np.rad2deg(theta), np.rad2deg(theta1) }')
+
+        c, s = np.cos(theta), np.sin(theta)
+        R = np.array(((c, -s), (s, c)))
+        np_points = np.array([np.dot(R, point) for point in np_points])
+
+        np_points[:, 0] = np_points[:, 0] * scale_f
+
+        c, s = np.cos(-theta), np.sin(-theta)
+        R = np.array(((c, -s), (s, c)))
+        np_points = np.array([np.dot(R, point) for point in np_points])
+
+        np_points += np_center
+
+        self.points = [ QtCore.QPointF(point[0], point[1]) for point in np_points]
+
