@@ -1966,7 +1966,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def shape_scale_up(self):
         scale_f = 1.1
         if QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier :
-            scale_f = -1.02
+            scale_f = 1.02
 
         self.canvas.scaleShape(scale_f)
 
