@@ -349,3 +349,16 @@ class Shape(object):
 
         self.points = [ QtCore.QPointF(point[0], point[1]) for point in np_points]
 
+    def expand_axis(self, scale_f, axis):
+        np_points = np.array([(p.x(), p.y()) for p in self.points])
+        np_max = np.max(np_points, axis=0)
+        np_min = np.min(np_points, axis=0)
+        np_center = (np_min + np_max) / 2
+        np_points -= np_center
+
+        if axis == 0 :
+            np_points[:,0] *= scale_f
+        else:
+            np_points[:,1] *= scale_f
+        np_points += np_center
+        self.points = [ QtCore.QPointF(point[0], point[1]) for point in np_points]

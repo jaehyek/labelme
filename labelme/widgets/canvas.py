@@ -560,6 +560,14 @@ class Canvas(QtWidgets.QWidget):
             self.update()
             self.shapeMoved.emit()
 
+    def expand_axis(self, scale_f, axis=0):
+        if self.selectedShapes:
+            for shape in self.selectedShapes :
+                shape.expand_axis(scale_f, axis)
+
+            self.update()
+            self.shapeMoved.emit()
+
     def paintEvent(self, event):
         if not self.pixmap:
             return super(Canvas, self).paintEvent(event)
